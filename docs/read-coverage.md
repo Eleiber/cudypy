@@ -102,6 +102,10 @@ helpers/retries. Read configured timezone fields through `get_system_config()`.
 
 ## Browser coverage still to review
 
+The [web-interface audit](web-interface.md) now records inspected routes, fields,
+bandwidth-source behavior and confirmed dedicated-reader gaps. The remaining
+limitations below still apply; the app RPC catalog is not the web endpoint catalog.
+
 The reviewed browser home, system-status and client pages load HTML fragments;
 they are not interchangeable with JSON app RPCs. Client details, rates and
 system/interface status have library representations, but no field-by-field

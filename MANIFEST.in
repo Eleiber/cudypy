@@ -8,6 +8,7 @@ include docs/async.md docs/client-controls.md docs/compatibility.md
 include docs/device-semantics.md docs/feature-reads.md docs/feature-roadmap.md
 include docs/protocol.md docs/wireless.md
 include docs/read-coverage.md
+include docs/web-interface.md
 recursive-include examples *.py
 recursive-include dashboard *.py *.md *.txt *.html *.css *.js
 recursive-include dashboard/tests *.cjs

@@ -44,9 +44,10 @@ change the dashboard connection, not router configuration. Changing targets
 requires new credentials and clears history. Tokens are replaced by restarting
 with a fresh environment value. The UI exposes no library mutation controls.
 
-Compared with the inspected stock pages, this adds tab-local historical
-exploration over snapshot polling. It is not full panel replacement or a claim
-that no Cudy firmware offers similar visualizations.
+The inspected stock panels already have per-interface bandwidth graphs. This
+dashboard provides tab-local client-rate exploration; graphs alone are not a
+unique advantage. See the [router web-interface comparison](../docs/web-interface.md)
+for confirmed differences and remaining coverage. This is not a full panel replacement.
 
 ## Tests
 
