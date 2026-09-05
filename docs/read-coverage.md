@@ -35,8 +35,12 @@ dedicated, tested helper.
 | `conf.get_pingcheck` | `get_connectivity_check_config` |
 | `conf.get_autoreboot` | `get_auto_reboot_config` |
 | `conf.get_qos` | `get_qos_config` |
+| `devices.get_name` | `get_client_names` |
+| `devices.traffic_stat` | `get_client_traffic_page` |
+| `wifi.get_freqlist` | `get_wifi_frequencies` |
+| `wifi.get_aplist` | `get_wifi_scan_results` (existing results only) |
 
-The last seven configuration helpers have source-confirmed argument lists and
+The seven additional configuration helpers and four client/Wi-Fi helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -52,10 +56,9 @@ contact external services, generate credentials or mark messages as read.
 
 | Area | RPC candidates | Next verification |
 | --- | --- | --- |
-| Client identity | `devices.get_name`, `devices.mdns_browse` | Name-map structure; whether browsing performs active discovery |
-| Client traffic / legacy list | `devices.traffic_stat`, `devices.get_devlist` | Pagination, result shape and native counter semantics |
+| Client identity | `devices.mdns_browse` | Whether browsing performs active discovery; identity certainty remains unproven |
+| Legacy client list | `devices.get_devlist` | Result variants and value beyond the existing extended-list helper |
 | Network | `net.online_interfaces`, `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
-| Wi-Fi | `wifi.get_freqlist`, `wifi.get_aplist` | Radio arguments; cached results versus scan initiation |
 | Mesh | `easymesh.get_conf`, `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
 | IPTV | `iptv.get_conf` | Object fields and null variants |
 | VPN | `vpn.get_conf`, `vpn.get_connection`, `vpn.export_conf` | Protocol arguments and sensitive profile/key material; export side effects |

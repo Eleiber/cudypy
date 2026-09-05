@@ -383,6 +383,10 @@ class CudyRouter:
             "conf.get_pingcheck",
             "conf.get_autoreboot",
             "conf.get_qos",
+            "devices.get_name",
+            "devices.traffic_stat",
+            "wifi.get_freqlist",
+            "wifi.get_aplist",
         }
     )
 
@@ -469,6 +473,60 @@ class CudyRouter:
     def get_traffic_stats(self) -> Any:
         """Return raw network traffic statistics."""
         return self.call_api("net.traffic_stat")["result"]
+
+    def get_client_names(self) -> List[Dict[str, Any]]:
+        """Read raw named-client records; null means no records.
+
+        This is not a MAC-to-name dictionary or evidence of physical identity.
+        Unknown fields and identifiers are preserved without normalization.
+        """
+        return self._read_list("devices.get_name")
+
+    def get_client_traffic_page(self, page: int = 1) -> Dict[str, Any]:
+        """Read one traffic page of up to 100 clients, retaining raw metadata.
+
+        This is a current snapshot, not historical bandwidth usage. Pages are
+        not atomic across calls. No counters are reset or converted.
+        """
+        if type(page) is not int or page < 1:
+            raise ValueError("page must be a positive integer")
+        result = self.call_api("devices.traffic_stat", [(page - 1) * 100 + 1, page * 100])["result"]
+        if (
+            not isinstance(result, dict)
+            or not isinstance(result.get("devlist"), list)
+            or not all(isinstance(item, dict) for item in result["devlist"])
+        ):
+            raise CudyAPIError("Client traffic page must contain a devlist array")
+        count = result.get("devcnt")
+        if count is not None and (type(count) is not int or count < 0):
+            raise CudyAPIError("Client traffic count must be a nonnegative integer")
+        return result
+
+    def get_wifi_frequencies(self) -> Dict[str, Any]:
+        """Read raw per-interface frequency information without scanning.
+
+        Firmware-specific interface names and nested fields remain unchanged.
+        """
+        return self._read_object("wifi.get_freqlist")
+
+    def get_wifi_scan_results(
+        self, interface: Optional[str] = None
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Read existing AP results once; never trigger or wait for a scan.
+
+        Null means results are unavailable/not ready, distinct from an empty
+        list. Results may be stale and may contain sensitive network details.
+        """
+        if interface is not None and (not isinstance(interface, str) or not interface.strip()):
+            raise ValueError("interface must be a nonempty string")
+        result = self.call_api("wifi.get_aplist", [] if interface is None else [interface])[
+            "result"
+        ]
+        if result is not None and (
+            not isinstance(result, list) or not all(isinstance(item, dict) for item in result)
+        ):
+            raise CudyAPIError("Wi-Fi scan results must be an array of objects or null")
+        return result
 
     def _read_list(self, method: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
         result = self.call_api(method, params)["result"]

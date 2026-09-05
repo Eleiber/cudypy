@@ -55,6 +55,10 @@ def main():
                 "wds": router.get_wds_status,
                 "wps_status": router.get_wps_status,
                 "vpn_status": router.get_vpn_status,
+                "client_names": router.get_client_names,
+                "client_traffic_first_page": router.get_client_traffic_page,
+                "wifi_frequencies": router.get_wifi_frequencies,
+                "wifi_existing_scan_results": router.get_wifi_scan_results,
             }
             if args.include_config:
                 reads.update(

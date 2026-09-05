@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add raw client-name records, paged client traffic, Wi-Fi frequency information
+  and existing AP-result reads, preserving unavailable scan results separately
+  from empty lists. No scan initiation or automatic polling is performed.
+
 - Add system, IPv6, defaults, DDNS, connectivity-check, automatic-reboot and QoS
   configuration readers with lossless results, offline contract tests and opt-in
   compatibility checks. Document missing read candidates and verification limits.

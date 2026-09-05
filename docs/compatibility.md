@@ -23,6 +23,9 @@ Observed differences:
 
 ## Verification limits
 
+- Client-name records, paged client traffic, Wi-Fi frequencies and existing AP
+  result reads are source-backed/offline-tested only, not hardware-verified.
+
 - The additional system, IPv6, defaults, DDNS, connectivity-check, automatic-reboot
   and QoS configuration helpers are offline-tested only; their availability on
   the listed models has not yet been checked.

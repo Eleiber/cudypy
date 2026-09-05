@@ -66,6 +66,36 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Client names, traffic and Wi-Fi information
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_client_names()` | `devices.get_name`, `[]` | List of raw client objects; null becomes `[]`, not a MAC-keyed map |
+| `get_client_traffic_page(page=1)` | `devices.traffic_stat`, `[start, end]` | Raw object with `devlist` and optional `devcnt` |
+| `get_wifi_frequencies()` | `wifi.get_freqlist`, `[]` | Raw object keyed by firmware interface names |
+| `get_wifi_scan_results(interface=None)` | `wifi.get_aplist`, `[]` or `[interface]` | Raw AP-object list or `None` |
+
+These helpers are source-backed and offline-tested; hardware compatibility is
+not yet verified. All preserve unknown fields. Name records do not establish
+physical identity across randomized MAC addresses. The traffic helper fetches
+exactly one page with inclusive bounds of 100 entries (page 2 is `[101, 200]`),
+not every client or historical usage. It preserves rates/counters verbatim and
+does not infer counter direction, accounting periods or reset behavior. Pages
+can change between calls. Invalid page types (including booleans) fail locally.
+
+Traffic results must contain an object array `devlist`; optional non-null
+`devcnt` must be a nonnegative integer. Frequency results must be objects;
+interface names and nested channel/frequency structures are not hardcoded.
+Malformed top-level structures raise `CudyAPIError`.
+
+The AP-result reader sends only `wifi.get_aplist`, never `wifi.trigger_scan`.
+It does not poll, wait, join a network or initiate discovery. `None` means
+unavailable/not ready, whereas `[]` is an empty result; returned results may be
+stale. An explicitly supplied interface must be nonempty text. AP records can
+include sensitive network details, so do not log their raw contents. An
+unsupported method raises `CudyUnsupportedError`, without trying an active
+scan or a different endpoint as fallback.
+
 ### Additional configuration reads
 
 All of these methods send an empty positional argument list (`[]`). They are

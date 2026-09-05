@@ -55,6 +55,8 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
     assert "get_client_info" not in methods
     verifier.get_ddns_config.assert_called_once_with()
     verifier.get_auto_reboot_config.assert_called_once_with()
+    verifier.get_client_traffic_page.assert_called_once_with()
+    verifier.get_wifi_scan_results.assert_called_once_with()
 
 
 def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
