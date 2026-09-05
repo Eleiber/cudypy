@@ -4,17 +4,10 @@ CudyPy is an unofficial, experimental synchronous Python wrapper for Cudy's loca
 LuCI app RPC API. See [compatibility and verification coverage](docs/compatibility.md)
 for tested models, firmware and verification limits.
 
-The package is named `cudypy`.
-Install from this source tree, not an assumed PyPI release.
-
 Use `router.get_*()` for object-based reads: system/client models,
 nested response records and explicit page objects. See the
 [model reference](docs/models.md) for return types, fields and firmware-specific
 extensions.
-
-For monitoring graphs, client drill-down and search/sorting, see the
-[local dashboard](dashboard/README.md). For asyncio integration and native
-async tradeoffs, see [async feasibility](docs/async.md).
 
 ## Install
 
