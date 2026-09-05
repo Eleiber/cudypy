@@ -446,8 +446,8 @@ class TestSystemMethods:
 
         info = mock_router.get_system_info()
 
-        assert info["model"] == "WR3000"
-        assert info["firmware_version"] == "1.2.3"
+        assert info.model == "WR3000"
+        assert info.raw["firmware_version"] == "1.2.3"
 
     @patch("requests.Session.post")
     def test_get_network_status(self, mock_post, mock_router):
@@ -460,5 +460,5 @@ class TestSystemMethods:
 
         status = mock_router.get_network_status()
 
-        assert status["wan"] == "connected"
-        assert status["lan"] == "up"
+        assert status.raw["wan"] == "connected"
+        assert status.raw["lan"] == "up"

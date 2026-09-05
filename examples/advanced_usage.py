@@ -22,10 +22,12 @@ def main():
             print("Firmware:", status.firmware, "uptime seconds:", status.uptime_seconds)
             wan = router.get_interface_status()
             print("WAN reported up:", wan.is_up, "protocol:", wan.protocol)
-            print("Features:", router.get_supported_features())
+            features = router.get_supported_features()
+            print("Feature response type:", type(features).__name__)
             for port in router.get_ethernet_ports():
                 print("Port:", port.label, "link:", port.link_up, "Mbps:", port.speed_mbps)
-            print("Available modes:", router.get_work_modes())
+            for mode in router.get_work_modes():
+                print("Available mode:", mode.mode, "name:", mode.name)
             print("Wi-Fi schedules:", len(router.get_wifi_schedule()))
             if devices:
                 limit = router.get_client_rate_limit(devices[0].mac_address)

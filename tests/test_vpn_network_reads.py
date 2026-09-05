@@ -1,5 +1,7 @@
 """VPN/network read contracts using synthetic data and blocked real HTTP."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -49,7 +51,7 @@ def test_wire_payload_and_raw_result(reader, args, method, params, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)(*args) == result
+            assert response_raw(getattr(router, reader)(*args)) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {"method": method, "params": params}
 
@@ -103,11 +105,11 @@ def test_bad_response(reader, args, result):
 def test_empty_and_unknown_values():
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router, "call_api", return_value={"result": None}):
-            assert router.get_online_interfaces() == []
+            assert response_raw(router.get_online_interfaces()) == []
         with patch.object(router, "call_api", return_value={"result": {}}):
-            assert router.get_vpn_profiles() == {}
+            assert response_raw(router.get_vpn_profiles()) == {}
         with patch.object(router, "call_api", return_value={"result": {"connection_list": []}}):
-            assert router.get_vpn_connection_page("wireguards") == {"connection_list": []}
+            assert response_raw(router.get_vpn_connection_page("wireguards")) == {"connection_list": []}
 
 
 @pytest.mark.parametrize("reader,args,method,params,result", CASES)

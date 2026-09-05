@@ -32,7 +32,7 @@ def test_selected_section_read_uses_configuration_payload():
 @pytest.mark.parametrize("data", [None, [], {"disabled": "bad"}, {"ssid": 5}])
 def test_bad_wireless_section(data):
     with CudyRouter("http://192.0.2.1", auth_token="test-token") as router:
-        with patch.object(router, "get_wireless_config", return_value={"custom": data}):
+        with patch.object(router, "_read_wireless_config", return_value={"custom": data}):
             with pytest.raises(CudyAPIError):
                 router.get_wireless_interface("custom")
 

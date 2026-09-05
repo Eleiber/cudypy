@@ -6,7 +6,7 @@ import logging
 import re
 import threading
 from decimal import Decimal, InvalidOperation
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable, Type, TypeVar
 from urllib.parse import urlparse
 
 import requests
@@ -28,6 +28,26 @@ from ..models.status import (
     WirelessInterface,
 )
 
+from ..models.records import (
+    AccessPoint,
+    ClientName,
+    ClientTraffic,
+    Configuration,
+    ConfigurationSections,
+    FirmwareRecord,
+    ParentalGroup,
+    ProviderCatalog,
+    ResponsePage,
+    WdsStatus,
+    WorkMode,
+    ResponseValue,
+    deserialize,
+    validate_record,
+)
+
+T = TypeVar("T", bound=FirmwareRecord)
+R = TypeVar("R")
+
 # Libraries must not change the application's logging configuration.
 logger = logging.getLogger(__name__)
 
@@ -38,7 +58,7 @@ class CudyRouter:
     AUTH_PATH = "/cgi-bin/luci/rpc/auth"
     API_PATH = "/cgi-bin/luci/rpc/app"
     DEFAULT_MDNS_TIMEOUT = 7
-    DEFAULT_REQUEST_TIMEOUT = 10
+    DEFAULT_REQUEST_TIMEOUT: float = 10
 
     class _CudyServiceListener(ServiceListener):
         """Internal mDNS service discovery listener."""
@@ -475,23 +495,23 @@ class CudyRouter:
             devices.append(device)
         return devices
 
-    def get_supported_features(self) -> Any:
+    def _read_supported_features(self) -> Any:
         """Return firmware feature declarations without guessing model capabilities."""
         return self.call_api("feature.supported")["result"]
 
-    def get_ethernet_status(self) -> Any:
+    def _read_ethernet_status(self) -> Any:
         """Return raw Ethernet port status."""
         return self.call_api("eth.getstatus")["result"]
 
-    def get_mesh_clients(self) -> Any:
+    def _read_mesh_clients(self) -> Any:
         """Return raw mesh client data; availability depends on firmware and mode."""
         return self.call_api("mesh.get_clients")["result"]
 
-    def get_traffic_stats(self) -> Any:
+    def _read_traffic_stats(self) -> Any:
         """Return raw network traffic statistics."""
         return self.call_api("net.traffic_stat")["result"]
 
-    def get_client_names(self) -> List[Dict[str, Any]]:
+    def _read_client_names(self) -> List[Dict[str, Any]]:
         """Read raw named-client records; null means no records.
 
         This is not a MAC-to-name dictionary or evidence of physical identity.
@@ -499,7 +519,7 @@ class CudyRouter:
         """
         return self._read_list("devices.get_name")
 
-    def get_legacy_devices(self) -> List[Dict[str, Any]]:
+    def _read_legacy_devices(self) -> List[Dict[str, Any]]:
         """Read the legacy raw client array; null becomes no entries.
 
         Unlike get_devices(), this performs no extended-list pagination or
@@ -507,7 +527,7 @@ class CudyRouter:
         """
         return self._read_list("devices.get_devlist")
 
-    def get_firmware_update_info(self) -> Optional[Dict[str, Any]]:
+    def _read_firmware_update_info(self) -> Optional[Dict[str, Any]]:
         """Read available firmware metadata; do not initiate an update check.
 
         Metadata may be stale. An empty-array response becomes None (unavailable).
@@ -534,7 +554,7 @@ class CudyRouter:
             raise CudyAPIError("Apply status must be a string or null")
         return result
 
-    def get_client_traffic_page(self, page: int = 1) -> Dict[str, Any]:
+    def _read_client_traffic_page(self, page: int = 1) -> Dict[str, Any]:
         """Read one traffic page of up to 100 clients, retaining raw metadata.
 
         This is a current snapshot, not historical bandwidth usage. Pages are
@@ -554,14 +574,14 @@ class CudyRouter:
             raise CudyAPIError("Client traffic count must be a nonnegative integer")
         return result
 
-    def get_wifi_frequencies(self) -> Dict[str, Any]:
+    def _read_wifi_frequencies(self) -> Dict[str, Any]:
         """Read raw per-interface frequency information without scanning.
 
         Firmware-specific interface names and nested fields remain unchanged.
         """
         return self._read_object("wifi.get_freqlist")
 
-    def get_wifi_scan_results(
+    def _read_wifi_scan_results(
         self, interface: Optional[str] = None
     ) -> Optional[List[Dict[str, Any]]]:
         """Read existing AP results once; never trigger or wait for a scan.
@@ -600,7 +620,7 @@ class CudyRouter:
 
     def get_ethernet_ports(self) -> List[EthernetPort]:
         """Read typed port status, normalizing firmware auto/autoneg variants."""
-        data = self.get_ethernet_status()
+        data = self._read_ethernet_status()
         if not isinstance(data, list):
             raise CudyAPIError("Ethernet status must be an array")
         try:
@@ -608,15 +628,15 @@ class CudyRouter:
         except (ValueError, TypeError):
             raise CudyAPIError("Malformed Ethernet port status") from None
 
-    def get_work_modes(self) -> List[Dict[str, Any]]:
+    def _read_work_modes(self) -> List[Dict[str, Any]]:
         """Return available mode/name entries, not the currently selected mode."""
         return self._read_list("conf.get_workmodes")
 
-    def get_wifi_schedule(self) -> List[Dict[str, Any]]:
+    def _read_wifi_schedule(self) -> List[Dict[str, Any]]:
         """Read Wi-Fi schedules without modifying them; null means no entries."""
         return self._read_list("wifi.get_schedule")
 
-    def get_wds_status(self, interface: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def _read_wds_status(self, interface: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Read WDS status, optionally for one interface; null stays unknown/absent."""
         if interface is not None and (not isinstance(interface, str) or not interface.strip()):
             raise ValueError("interface must be a nonempty string")
@@ -632,7 +652,7 @@ class CudyRouter:
             raise CudyAPIError("WPS status must be a string or null")
         return result
 
-    def get_vpn_status(self) -> Any:
+    def _read_vpn_status(self) -> Any:
         """Read firmware-specific VPN status; older firmware may reject the method."""
         return self.call_api("vpn.get_status")["result"]
 
@@ -645,7 +665,7 @@ class CudyRouter:
             raise CudyAPIError("Online interfaces must be an array of strings")
         return result
 
-    def get_vpn_profiles(self, category: str = "clients") -> Dict[str, Any]:
+    def _read_vpn_profiles(self, category: str = "clients") -> Dict[str, Any]:
         """Read a VPN configuration category, preserving its outer object.
 
         Distinct from get_vpn_config(), which reads general VPN settings.
@@ -655,7 +675,7 @@ class CudyRouter:
             raise ValueError("category must be a nonempty string")
         return self._read_object("vpn.get_conf", [category])
 
-    def get_vpn_client_config(self, client_id: str) -> Dict[str, Any]:
+    def _read_vpn_client_config(self, client_id: str) -> Dict[str, Any]:
         """Read a known VPN client profile; retain the firmware response wrapper.
 
         May contain private keys and credentials. Does not enable the client.
@@ -664,7 +684,7 @@ class CudyRouter:
             raise ValueError("client_id must be a nonempty string")
         return self._read_object("vpn.get_conf", ["clients", client_id])
 
-    def get_vpn_connection_page(self, vpn_type: str, page: int = 1) -> Dict[str, Any]:
+    def _read_vpn_connection_page(self, vpn_type: str, page: int = 1) -> Dict[str, Any]:
         """Read one connection page of up to 100 entries; not historical usage.
 
         Preserve native handshake values and count metadata. Does not connect,
@@ -685,14 +705,14 @@ class CudyRouter:
             raise CudyAPIError("VPN connection count must be a nonnegative integer")
         return result
 
-    def get_vpn_config(self) -> Dict[str, Any]:
+    def _read_vpn_config(self) -> Dict[str, Any]:
         """Read VPN enabled/policy/protocol configuration; may contain private fields.
 
         This does not establish tunnel connectivity. Do not log the raw result.
         """
         return self._read_config(["vpn", "config"])
 
-    def get_mesh_device_page(self, node_id: str, page: int = 1) -> Dict[str, Any]:
+    def _read_mesh_device_page(self, node_id: str, page: int = 1) -> Dict[str, Any]:
         """Read a mesh node's client page (up to 100), retaining devcnt metadata.
 
         Select the actual node identifier from mesh data. This does not discover,
@@ -717,16 +737,16 @@ class CudyRouter:
         return result
 
     def get_system_status(self) -> SystemStatus:
-        """Read selected typed system fields; raw get_system_info remains available."""
+        """Read a system snapshot; alias of get_system_info."""
         try:
-            return SystemStatus.from_api_response(self.get_system_info())
+            return SystemStatus.from_api_response(self._read_system_info())
         except (TypeError, ValueError):
             raise CudyAPIError("Malformed system status") from None
 
     def get_interface_status(self, interface: str = "wan") -> InterfaceStatus:
-        """Read selected typed runtime fields; raw get_network_status remains available."""
+        """Read an interface snapshot; alias of get_network_status."""
         # Validate before parsing, retaining the raw reader's argument errors.
-        result = self.get_network_status(interface)
+        result = self._read_network_status(interface)
         try:
             return InterfaceStatus.from_api_response(result)
         except (TypeError, ValueError):
@@ -749,38 +769,38 @@ class CudyRouter:
             raise CudyAPIError("Expected an object or empty array from " + method)
         return result
 
-    def get_system_config(self) -> Dict[str, Any]:
+    def _read_system_config(self) -> Dict[str, Any]:
         """Read system settings, not runtime system status; preserve raw fields."""
         return self._read_object("conf.get_system")
 
-    def get_ipv6_config(self) -> Dict[str, Any]:
+    def _read_ipv6_config(self) -> Dict[str, Any]:
         """Read IPv6 settings without testing connectivity or changing interfaces."""
         return self._read_object("conf.get_ipv6")
 
-    def get_default_config(self) -> Dict[str, Any]:
+    def _read_default_config(self) -> Dict[str, Any]:
         """Read firmware defaults without restoring them; may contain credentials."""
         return self._read_object("conf.get_defaults")
 
-    def get_ddns_config(self) -> Dict[str, Any]:
+    def _read_ddns_config(self) -> Dict[str, Any]:
         """Read DDNS settings; may include account credentials. Do not log them."""
         return self._read_object("conf.get_ddns")
 
-    def get_connectivity_check_config(self) -> Dict[str, Any]:
+    def _read_connectivity_check_config(self) -> Dict[str, Any]:
         """Read configured connectivity-check targets; does not run a check."""
         return self._read_object("conf.get_pingcheck")
 
-    def get_auto_reboot_config(self) -> Optional[Dict[str, Any]]:
+    def _read_auto_reboot_config(self) -> Optional[Dict[str, Any]]:
         """Read reboot settings; empty-array responses become None (unavailable).
 
         Does not schedule or cause a reboot. None does not imply disabled.
         """
         return self._read_optional_firmware_object("conf.get_autoreboot")
 
-    def get_qos_config(self) -> Any:
+    def _read_qos_config(self) -> Any:
         """Read firmware-defined QoS JSON; preserve null and all result shapes."""
         return self.call_api("conf.get_qos")["result"]
 
-    def get_iptv_config(self) -> Dict[str, Any]:
+    def _read_iptv_config(self) -> Dict[str, Any]:
         """Read IPTV settings and available profiles without applying a profile."""
         return self._read_object("iptv.get_conf")
 
@@ -790,32 +810,32 @@ class CudyRouter:
             raise ValueError("interface must be a nonempty string")
         return [interface]
 
-    def get_cellular_status(self, interface: str) -> Dict[str, Any]:
+    def _read_cellular_status(self, interface: str) -> Dict[str, Any]:
         """Read raw modem status for a known interface; may contain SIM identifiers.
 
         Does not enable the modem, select a SIM or initiate a connection.
         """
         return self._read_object("cellular.getstatus", self._cellular_interface(interface))
 
-    def get_cellular_data_config(self, interface: str) -> List[Dict[str, Any]]:
+    def _read_cellular_data_config(self, interface: str) -> List[Dict[str, Any]]:
         """Read raw data-plan settings as a list; null becomes no entries.
 
         No limits, billing dates or counters are changed. Units remain raw.
         """
         return self._read_list("cellular.get_data", self._cellular_interface(interface))
 
-    def get_cellular_statistics(self, interface: str) -> Dict[str, Any]:
+    def _read_cellular_statistics(self, interface: str) -> Dict[str, Any]:
         """Read native cellular statistics without clearing or converting counters.
 
         Accounting periods and firmware-specific nested fields remain raw.
         """
         return self._read_object("cellular.get_statistics", self._cellular_interface(interface))
 
-    def get_adshield_providers(self) -> Dict[str, Any]:
+    def _read_adshield_providers(self) -> Dict[str, Any]:
         """Read the raw provider-catalog object, retaining its providers field."""
         return self._read_object("adshield.get_providers")
 
-    def get_adshield_config(self) -> Dict[str, Any]:
+    def _read_adshield_config(self) -> Dict[str, Any]:
         """Read ad-blocking settings; may contain account credentials. Do not log."""
         return self._read_object("adshield.get_conf")
 
@@ -828,7 +848,7 @@ class CudyRouter:
             raise CudyAPIError("Expected an object from " + method)
         return result
 
-    def get_adshield_status(self, provider: str) -> Dict[str, Any]:
+    def _read_adshield_status(self, provider: str) -> Dict[str, Any]:
         """Read provider status once, retaining nested provider error codes.
 
         May contact an external provider through the router. No automatic auth
@@ -836,7 +856,7 @@ class CudyRouter:
         """
         return self._read_adshield_provider("adshield.get_status", provider)
 
-    def get_adshield_stats(self, provider: str) -> Dict[str, Any]:
+    def _read_adshield_stats(self, provider: str) -> Dict[str, Any]:
         """Read raw provider statistics once; do not infer periods or reset counts.
 
         May contact an external provider through the router. Sensitive account
@@ -844,7 +864,7 @@ class CudyRouter:
         """
         return self._read_adshield_provider("adshield.get_stats", provider)
 
-    def get_easymesh_config(self) -> Dict[str, Any]:
+    def _read_easymesh_config(self) -> Dict[str, Any]:
         """Read EasyMesh settings, not topology; never initiate enrollment."""
         return self._read_object("easymesh.get_conf")
 
@@ -857,7 +877,7 @@ class CudyRouter:
             raise CudyAPIError("Multi-SSID interfaces must be an array of strings")
         return result
 
-    def get_multi_ssid_config(self, section: str) -> Optional[Dict[str, Any]]:
+    def _read_multi_ssid_config(self, section: str) -> Optional[Dict[str, Any]]:
         """Read one known multi-SSID section; null remains absent/unknown.
 
         May contain Wi-Fi or RADIUS credentials. Do not log the raw result.
@@ -870,7 +890,7 @@ class CudyRouter:
             raise CudyAPIError("Multi-SSID configuration must be an object or null")
         return result
 
-    def get_parental_control_config(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+    def _read_parental_control_config(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
         """Read raw parental groups, optionally selecting one by its name.
 
         Even a selected group returns a list. Null means no records. Device
@@ -888,14 +908,14 @@ class CudyRouter:
         except (TypeError, ValueError):
             raise CudyAPIError("Malformed LAN configuration") from None
 
-    def get_dhcp_config(self) -> Dict[str, Any]:
+    def _read_dhcp_config(self) -> Dict[str, Any]:
         """Read DHCP sections verbatim, including firmware-specific entries.
 
         May contain private client/network configuration. Do not log the result.
         """
         return self._read_config(["dhcp"])
 
-    def get_wireless_config(self) -> Dict[str, Any]:
+    def _read_wireless_config(self) -> Dict[str, Any]:
         """Read wireless sections, including credentials when firmware returns them.
 
         This does not scan, activate WPS, or change Wi-Fi. Do not log the result.
@@ -911,7 +931,7 @@ class CudyRouter:
         """
         if not isinstance(section, str) or not section.strip():
             raise ValueError("section must be nonempty text")
-        config = self.get_wireless_config()
+        config = self._read_wireless_config()
         if section not in config:
             return None
         try:
@@ -982,7 +1002,7 @@ class CudyRouter:
         except (TypeError, ValueError):
             raise CudyAPIError("Malformed client rate limit") from None
 
-    def get_client_internet_schedule(self, mac: str) -> List[Dict[str, Any]]:
+    def _read_client_internet_schedule(self, mac: str) -> List[Dict[str, Any]]:
         """Read per-client schedules; unsupported firmware raises an RPC error."""
         return self._read_list("conf.get_internet_schedule", [self._client_mac(mac)])
 
@@ -1136,7 +1156,7 @@ class CudyRouter:
                 return device
         return None
 
-    def get_system_info(self) -> Dict[str, Any]:
+    def _read_system_info(self) -> Dict[str, Any]:
         """Get router system information.
 
         Returns:
@@ -1155,7 +1175,7 @@ class CudyRouter:
             raise CudyAPIError("System information must be an object")
         return response["result"]
 
-    def get_network_status(self, interface: str = "wan") -> Dict[str, Any]:
+    def _read_network_status(self, interface: str = "wan") -> Dict[str, Any]:
         """Get network interface status.
 
         Returns:
@@ -1189,3 +1209,207 @@ class CudyRouter:
         logger.warning("Initiating router reboot")
         response = self.call_api("system.reboot", retry_auth=False)
         return bool(response.get("result"))
+
+    def _convert(self, value: Any, factory: Callable[[Any], R]) -> R:
+        try:
+            result = factory(value)
+            if isinstance(result, FirmwareRecord):
+                validate_record(result)
+            return result
+        except (ValueError, TypeError):
+            raise CudyAPIError("Malformed response model") from None
+
+    def _record(self, model: Type[T], reader: str, *args: Any) -> T:
+        return self._convert(getattr(self, reader)(*args), model)
+
+    def _optional(self, model: Type[T], reader: str, *args: Any) -> Optional[T]:
+        value = getattr(self, reader)(*args)
+        return None if value is None else self._convert(value, model)
+
+    def _records(self, model: Type[T], reader: str, *args: Any) -> List[T]:
+        return [self._convert(value, model) for value in getattr(self, reader)(*args)]
+
+    def get_system_info(self) -> SystemStatus:
+        """Read SystemStatus; see the model reference for fields and limits."""
+        return self.get_system_status()
+
+    def get_network_status(self, interface: str = "wan") -> InterfaceStatus:
+        """Read InterfaceStatus; see the model reference for fields and limits."""
+        return self.get_interface_status(interface)
+
+    def get_ethernet_status(self) -> List[EthernetPort]:
+        """Read List[EthernetPort]; see the model reference for fields and limits."""
+        return self.get_ethernet_ports()
+
+    def get_supported_features(self) -> ResponseValue:
+        """Read ResponseValue; see the model reference for fields and limits."""
+        return self._convert(self._read_supported_features(), deserialize)
+
+    def get_mesh_clients(self) -> ResponseValue:
+        """Read ResponseValue; see the model reference for fields and limits."""
+        return self._convert(self._read_mesh_clients(), deserialize)
+
+    def get_traffic_stats(self) -> ResponseValue:
+        """Read ResponseValue; see the model reference for fields and limits."""
+        return self._convert(self._read_traffic_stats(), deserialize)
+
+    def get_vpn_status(self) -> ResponseValue:
+        """Read ResponseValue; see the model reference for fields and limits."""
+        return self._convert(self._read_vpn_status(), deserialize)
+
+    def get_qos_config(self) -> ResponseValue:
+        """Read ResponseValue; see the model reference for fields and limits."""
+        return self._convert(self._read_qos_config(), deserialize)
+
+    def get_client_names(self) -> List[ClientName]:
+        """Read List[ClientName]; see the model reference for fields and limits."""
+        return self._records(ClientName, "_read_client_names")
+
+    def get_legacy_devices(self) -> List[FirmwareRecord]:
+        """Read List[FirmwareRecord]; see the model reference for fields and limits."""
+        return self._records(FirmwareRecord, "_read_legacy_devices")
+
+    def get_work_modes(self) -> List[WorkMode]:
+        """Read List[WorkMode]; see the model reference for fields and limits."""
+        return self._records(WorkMode, "_read_work_modes")
+
+    def get_wifi_schedule(self) -> List[Configuration]:
+        """Read List[Configuration]; see the model reference for fields and limits."""
+        return self._records(Configuration, "_read_wifi_schedule")
+
+    def get_client_internet_schedule(self, mac: str) -> List[Configuration]:
+        """Read List[Configuration]; see the model reference for fields and limits."""
+        return self._records(Configuration, "_read_client_internet_schedule", mac)
+
+    def get_wifi_frequencies(self) -> FirmwareRecord:
+        """Read FirmwareRecord; see the model reference for fields and limits."""
+        return self._record(FirmwareRecord, "_read_wifi_frequencies")
+
+    def get_wifi_scan_results(self, interface: Optional[str] = None) -> Optional[List[AccessPoint]]:
+        """Read Optional[List[AccessPoint]]; see the model reference for fields and limits."""
+        values = self._read_wifi_scan_results(interface)
+        return None if values is None else [self._convert(value, AccessPoint) for value in values]
+
+    def get_wds_status(self, interface: Optional[str] = None) -> Optional[WdsStatus]:
+        """Read Optional[WdsStatus]; see the model reference for fields and limits."""
+        return self._optional(WdsStatus, "_read_wds_status", interface)
+
+    def get_firmware_update_info(self) -> Optional[FirmwareRecord]:
+        """Read Optional[FirmwareRecord]; see the model reference for fields and limits."""
+        return self._optional(FirmwareRecord, "_read_firmware_update_info")
+
+    def get_client_traffic_page(self, page: int = 1) -> ResponsePage[ClientTraffic]:
+        """Read ResponsePage[ClientTraffic]; see the model reference for fields and limits."""
+        data = self._read_client_traffic_page(page)
+        return self._convert(
+            data, lambda value: ResponsePage(value, "devlist", "devcnt", ClientTraffic)
+        )
+
+    def get_mesh_device_page(self, node_id: str, page: int = 1) -> ResponsePage[FirmwareRecord]:
+        """Read ResponsePage[FirmwareRecord]; see the model reference for fields and limits."""
+        data = self._read_mesh_device_page(node_id, page)
+        return self._convert(
+            data, lambda value: ResponsePage(value, "devlist", "devcnt", FirmwareRecord)
+        )
+
+    def get_vpn_connection_page(self, vpn_type: str, page: int = 1) -> ResponsePage[FirmwareRecord]:
+        """Read ResponsePage[FirmwareRecord]; see the model reference for fields and limits."""
+        data = self._read_vpn_connection_page(vpn_type, page)
+        return self._convert(
+            data, lambda value: ResponsePage(value, "connection_list", "total_cnt", FirmwareRecord)
+        )
+
+    def get_system_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_system_config")
+
+    def get_ipv6_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_ipv6_config")
+
+    def get_default_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_default_config")
+
+    def get_ddns_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_ddns_config")
+
+    def get_connectivity_check_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_connectivity_check_config")
+
+    def get_auto_reboot_config(self) -> Optional[Configuration]:
+        """Read Optional[Configuration]; see the model reference for fields and limits."""
+        return self._optional(Configuration, "_read_auto_reboot_config")
+
+    def get_iptv_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_iptv_config")
+
+    def get_easymesh_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_easymesh_config")
+
+    def get_multi_ssid_config(self, section: str) -> Optional[WirelessInterface]:
+        """Read Optional[WirelessInterface]; see the model reference for fields and limits."""
+        value = self._read_multi_ssid_config(section)
+        return (
+            None
+            if value is None
+            else self._convert(
+                value, lambda data: WirelessInterface.from_api_response(section, data)
+            )
+        )
+
+    def get_parental_control_config(self, group: Optional[str] = None) -> List[ParentalGroup]:
+        """Read List[ParentalGroup]; see the model reference for fields and limits."""
+        return self._records(ParentalGroup, "_read_parental_control_config", group)
+
+    def get_vpn_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_vpn_config")
+
+    def get_vpn_profiles(self, category: str = "clients") -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_vpn_profiles", category)
+
+    def get_vpn_client_config(self, client_id: str) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_vpn_client_config", client_id)
+
+    def get_dhcp_config(self) -> ConfigurationSections:
+        """Read ConfigurationSections; see the model reference for fields and limits."""
+        return self._record(ConfigurationSections, "_read_dhcp_config")
+
+    def get_wireless_config(self) -> ConfigurationSections:
+        """Read ConfigurationSections; see the model reference for fields and limits."""
+        return self._record(ConfigurationSections, "_read_wireless_config")
+
+    def get_cellular_status(self, interface: str) -> FirmwareRecord:
+        """Read FirmwareRecord; see the model reference for fields and limits."""
+        return self._record(FirmwareRecord, "_read_cellular_status", interface)
+
+    def get_cellular_data_config(self, interface: str) -> List[Configuration]:
+        """Read List[Configuration]; see the model reference for fields and limits."""
+        return self._records(Configuration, "_read_cellular_data_config", interface)
+
+    def get_cellular_statistics(self, interface: str) -> FirmwareRecord:
+        """Read FirmwareRecord; see the model reference for fields and limits."""
+        return self._record(FirmwareRecord, "_read_cellular_statistics", interface)
+
+    def get_adshield_providers(self) -> ProviderCatalog:
+        """Read ProviderCatalog; see the model reference for fields and limits."""
+        return self._record(ProviderCatalog, "_read_adshield_providers")
+
+    def get_adshield_config(self) -> Configuration:
+        """Read Configuration; see the model reference for fields and limits."""
+        return self._record(Configuration, "_read_adshield_config")
+
+    def get_adshield_status(self, provider: str) -> FirmwareRecord:
+        """Read FirmwareRecord; see the model reference for fields and limits."""
+        return self._record(FirmwareRecord, "_read_adshield_status", provider)
+
+    def get_adshield_stats(self, provider: str) -> FirmwareRecord:
+        """Read FirmwareRecord; see the model reference for fields and limits."""
+        return self._record(FirmwareRecord, "_read_adshield_stats", provider)

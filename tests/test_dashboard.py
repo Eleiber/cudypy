@@ -1,6 +1,7 @@
 """Optional Flask UI checks; no server or router is started."""
 
 from unittest.mock import Mock
+from cudypy import SystemStatus, InterfaceStatus
 
 import pytest
 
@@ -12,7 +13,8 @@ from dashboard import app as dashboard
 def client(monkeypatch):
     router = Mock()
     router.authenticate.return_value = True
-    router.get_system_info.return_value = {"model": "WR3000"}
+    router.get_system_info.return_value = SystemStatus.from_api_response({"model": "WR3000"})
+    router.get_network_status.return_value = InterfaceStatus.from_api_response({"is_up": True})
     router.get_devices.return_value = []
     monkeypatch.setattr(dashboard, "router_instance", router)
     monkeypatch.setattr(dashboard, "ROUTER_URL", "http://192.0.2.1")
@@ -25,6 +27,9 @@ def test_local_reads(client):
     response = client.get("/api/system", base_url="http://127.0.0.1:5000")
     assert response.status_code == 200
     assert response.json == {"system": {"model": "WR3000"}}
+    response = client.get("/api/network", base_url="http://127.0.0.1:5000")
+    assert response.status_code == 200
+    assert response.json == {"network": {"is_up": True}}
 
 
 def test_host_and_origin_checks(client):
@@ -55,6 +60,6 @@ def test_page_renders_without_connecting(client):
     assert response.status_code == 200
     html = response.get_data(as_text=True)
     assert 'id="trafficGraph"' in html
-    assert '/static/js/history.js' in html
-    assert 'fonts.googleapis.com' not in html
+    assert "/static/js/history.js" in html
+    assert "fonts.googleapis.com" not in html
     dashboard.router_instance.authenticate.assert_not_called()

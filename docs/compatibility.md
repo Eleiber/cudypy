@@ -43,7 +43,8 @@ No setting was changed to force a different response.
 `get_auto_reboot_config()` and `get_firmware_update_info()` now accept the
 observed empty array as unavailable object data and return `None`. This does not
 mean scheduling is disabled, firmware is current, or no upgrade exists. Objects
-remain raw; other malformed response types are rejected.
+are exposed as response records with lossless `.raw` exports; other malformed
+response types are rejected.
 
 Earlier hardware checks also covered individual client details and rate limits;
 per-client Internet schedules returned -32601 on both models. Ethernet
@@ -71,6 +72,13 @@ HTTP 200. `authenticate()` returned `False`, left no session token and cleared
 local cookies. No login retry or authenticated status request followed the
 rejection. Lockout thresholds and repeated-failure behavior were not tested.
 
+A user-reported Windows/Python 3.13 check on WR3000 V2.0 firmware
+2.5.24-20260727-122111 successfully performed password login and a system-info
+read over HTTP, using the default transport without an explicit salt or token.
+This also exercises automatic discovery on that setup. HTTPS failed in that
+report; its underlying transport/certificate cause has not been determined.
+This single workflow is not a full Python 3.13 regression-suite result.
+
 ## Still unverified
 
 - Selected VPN client profiles, non-default VPN categories and connection pages.
@@ -79,11 +87,12 @@ rejection. Lockout thresholds and repeated-failure behavior were not tested.
 - Cellular helpers: no cellular-capable model has been verified.
 - Ad-blocking provider status/statistics and other external-provider behavior.
 - Nonempty automatic-reboot and firmware-metadata objects on hardware.
-- Password login on WR3000 V2.0, automatic mDNS discovery, default-transport
-  password login and automatic reauthentication after session expiry.
+- Automatic discovery and default-transport password login on WR3000H V1.0;
+  automatic reauthentication after session expiry on either model.
 - Mutation behavior, counter units/reset boundaries and activity heuristics.
   No hardware writes, scans, exports or SMS reads were performed.
-- Python versions other than 3.12 and full admin-page field parity.
+- Full regression suites on Python versions other than 3.12 and full admin-page
+  field parity.
 
 Credentials and raw responses are not distributed as fixtures. Regression tests
 use synthetic data. Unsupported methods raise `CudyUnsupportedError`; other

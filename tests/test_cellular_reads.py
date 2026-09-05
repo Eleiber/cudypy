@@ -1,5 +1,7 @@
 """Synthetic cellular wire contracts; never enable a modem or reset counters."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -30,7 +32,7 @@ def test_payload_and_raw_values(reader, method, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)("synthetic-modem") == result
+            assert response_raw(getattr(router, reader)("synthetic-modem")) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {
                 "method": method,
@@ -70,10 +72,10 @@ def test_malformed_results(reader, bad):
 def test_empty_and_absent():
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router, "call_api", return_value={"result": None}):
-            assert router.get_cellular_data_config("synthetic-modem") == []
+            assert response_raw(router.get_cellular_data_config("synthetic-modem")) == []
         with patch.object(router, "call_api", return_value={"result": {}}):
-            assert router.get_cellular_status("synthetic-modem") == {}
-            assert router.get_cellular_statistics("synthetic-modem") == {}
+            assert response_raw(router.get_cellular_status("synthetic-modem")) == {}
+            assert response_raw(router.get_cellular_statistics("synthetic-modem")) == {}
 
 
 @pytest.mark.parametrize("reader,method,result", CASES)

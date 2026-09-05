@@ -1,5 +1,8 @@
 # Read-method coverage
 
+Getter return types are documented in the [model reference](models.md).
+Object conversion does not imply additional endpoint or field-schema coverage.
+
 This checklist separates implemented helpers from candidates requiring request,
 response and side-effect verification. It covers the app's router RPC method
 catalog and the previously reviewed browser status/client workflows. It is not
@@ -54,7 +57,7 @@ dedicated, tested helper.
 | `cellular.getstatus` | `get_cellular_status` |
 | `cellular.get_data` | `get_cellular_data_config` |
 | `cellular.get_statistics` | `get_cellular_statistics` |
-| `devices.get_devlist` | `get_legacy_devices` (raw array, no extended pagination) |
+| `devices.get_devlist` | `get_legacy_devices` (list of `FirmwareRecord`, no extended pagination) |
 | `system.upgrade_fwinfo` | `get_firmware_update_info` (no-argument form) |
 | `system.upgrade_checkstatus` | `get_firmware_check_status` (explicit target) |
 | `apply_status` | `get_apply_status` |

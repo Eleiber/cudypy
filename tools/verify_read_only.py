@@ -9,6 +9,10 @@ from cudypy import CudyAPIError, CudyAuthError, CudyRouter
 
 def shape(value):
     """Report structural types without exposing router or client values."""
+    if hasattr(value, "raw"):
+        value = value.raw
+    if isinstance(value, tuple):
+        value = list(value)
     if isinstance(value, dict):
         # Keys in nested maps may be client identifiers, so report only types.
         return {"type": "object", "value_types": sorted({type(v).__name__ for v in value.values()})}

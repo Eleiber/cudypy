@@ -1,5 +1,10 @@
 # Additional status and configuration reads
 
+Getters return models by default; see the
+[model reference](models.md). Tables below list
+the public Python return types; RPC shape and validation details follow each table. Original structures
+remain available through model `.raw` exports or `call_api()`.
+
 These methods use the same configurable `CudyRouter` connection and never
 submit configuration changes. They may raise `CudyUnsupportedError` when the
 firmware returns -32601; other RPC failures remain `CudyAPIError` with `code`.
@@ -7,26 +12,26 @@ Do not confuse absent configuration with unavailable functionality.
 
 | Python method | RPC and parameters | Result |
 | --- | --- | --- |
-| `get_work_modes()` | `conf.get_workmodes`, `[]` | List of mode/name dictionaries; available modes, not the active mode |
-| `get_wifi_schedule()` | `wifi.get_schedule`, `[]` | Schedule dictionaries; null becomes an empty list |
-| `get_wds_status(interface=None)` | `wifi.get_wds_status`, `[]` or `[interface]` | Raw dictionary or `None` |
-| `get_wps_status()` | `wifi.get_wps_status`, `[]` | Firmware status string or `None`; never starts WPS |
-| `get_vpn_status()` | `vpn.get_status`, `[]` | Raw firmware result |
+| `get_work_modes()` | `conf.get_workmodes`, `[]` | List of `WorkMode`; available modes, not the active mode |
+| `get_wifi_schedule()` | `wifi.get_schedule`, `[]` | List of `Configuration`; null becomes an empty list |
+| `get_wds_status(interface=None)` | `wifi.get_wds_status`, `[]` or `[interface]` | `WdsStatus` or `None` |
+| `get_wps_status()` | `wifi.get_wps_status`, `[]` | Firmware state string or `None`; never starts WPS |
+| `get_vpn_status()` | `vpn.get_status`, `[]` | `ResponseValue`; firmware-dependent structured result |
 | `get_client_info(mac)` | `devices.get_devinfo`, `[mac]` | `Device` or `None`; a direct read, not a full-list search |
 | `get_client_rate_limit(mac)` | `conf.get_rate_limit`, `[mac]` | `RateLimit` or `None` for no configuration |
-| `get_client_internet_schedule(mac)` | `conf.get_internet_schedule`, `[mac]` | List of schedule dictionaries; null becomes empty |
+| `get_client_internet_schedule(mac)` | `conf.get_internet_schedule`, `[mac]` | List of `Configuration`; null becomes empty |
 | `get_ethernet_ports()` | `eth.getstatus`, `[]` | List of `EthernetPort` |
 | `get_lan_config()` | `conf.get_all`, `["network", "lan"]` | `LanConfig`: configured values, not runtime status |
-| `get_dhcp_config()` | `conf.get_all`, `["dhcp"]` | Raw section dictionary |
-| `get_wireless_config()` | `conf.get_all`, `["wireless"]` | Raw section dictionary; no scan or WPS activation |
-| `get_vpn_config()` | `conf.get_all`, `["vpn", "config"]` | Raw configuration; not tunnel connectivity |
-| `get_mesh_device_page(node_id, page=1)` | `mesh.get_devices`, `[node_id, start, end]` | Raw object retaining `devlist` and optional `devcnt`; inclusive pages of 100 |
-| `get_system_status()` | `system.info`, `[]` | `SystemStatus`; original raw reader remains available |
-| `get_interface_status(interface="wan")` | `net.iface_status`, `[interface]` | `InterfaceStatus`; original raw reader remains available |
+| `get_dhcp_config()` | `conf.get_all`, `["dhcp"]` | `ConfigurationSections` |
+| `get_wireless_config()` | `conf.get_all`, `["wireless"]` | `ConfigurationSections`; no scan or WPS activation |
+| `get_vpn_config()` | `conf.get_all`, `["vpn", "config"]` | `Configuration`; not tunnel connectivity |
+| `get_mesh_device_page(node_id, page=1)` | `mesh.get_devices`, `[node_id, start, end]` | `ResponsePage[FirmwareRecord]`; inclusive pages of 100 |
+| `get_system_status()` | `system.info`, `[]` | `SystemStatus`; alias of `get_system_info()` |
+| `get_interface_status(interface="wan")` | `net.iface_status`, `[interface]` | `InterfaceStatus`; alias of `get_network_status()` |
 
 Client methods accept colon, hyphen or unseparated MAC addresses and normalize
 them to lowercase colon notation. Invalid identifiers fail before any request.
-The existing raw `get_ethernet_status()` remains available.
+`get_ethernet_status()` returns the same port models as `get_ethernet_ports()`.
 
 `LanConfig` exposes `protocol`, `ip_address`, `netmask`, `gateway` and
 `interface`, retaining all original fields in `raw` (excluded from its repr).
@@ -34,14 +39,14 @@ Missing fields remain `None`; a configured address is not proof of the active
 address when DHCP is in use. Use `get_network_status("lan")` for runtime status
 where supported. Null/non-object configuration results raise `CudyAPIError`.
 
-DHCP and wireless dictionaries preserve unknown section names, including
+DHCP and wireless section models preserve unknown section names, including
 firmware-generated sections. They can contain private identifiers and Wi-Fi
 passwords: do not log, print or save their raw contents. These reads do not
 perform configuration writes. No hardcoded radio names or IP addresses are
 used to select sections.
 
-`SystemStatus` exposes optional `model`, `firmware`, `board_name`, and
-`uptime_seconds`. A missing model is not guessed from firmware or an IP address.
+`SystemStatus` provides typed system and nested resource snapshots, described
+under [typed system status](#typed-system-status).
 `InterfaceStatus` exposes optional `is_up`, `protocol`, `interface`,
 `ip_address`, `gateway`, `uptime_seconds`, `rx_bytes`, and `tx_bytes`. `is_up`
 is a firmware interface observation, not proof of Internet reachability.
@@ -66,12 +71,58 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Typed system status
+
+`get_system_status()` fetches one `system.info` response and returns a
+`SystemStatus`. Attribute access is local to that snapshot; call the method
+again to refresh it. `get_system_info()` returns the same model; `.raw` exports
+the original dictionary and `call_api()` remains available for unparsed reads.
+
+```python
+status = router.get_system_status()
+print(status.model, status.firmware, status.uptime_seconds)
+if status.memory is not None:
+    print(status.memory.available)  # Native units, not an automatic byte conversion.
+```
+
+The optional `memory`, `swap`, `root` and `tmp` attributes are `ResourceUsage`
+objects, exported from both `cudypy` and `cudypy.models`. Each exposes `total`,
+`used`, `free`, `available`, `shared`, `cached` and `buffered`. `available` accepts
+the native `available` or `avail` field (the former takes precedence when both
+exist). Free and available remain distinct. Missing counters are `None`, not
+calculated from other counters; an empty object differs from a missing/null
+resource. Zero remains zero.
+
+System fields include `model`, `firmware`, `board_name`, `uptime_seconds`,
+`processor`, `revision`, `rom`, `country`, `device_type` (native `type`),
+`serial_number` (`sn`), `mac_address` (`macaddr`) and `lan_ip`.
+`processor` remains firmware text, not an inferred processor count.
+`cpu_usage`, `timestamp` and `localtime` are native nonnegative integers;
+`load` is a tuple of native nonnegative integers, without inferred scaling,
+averaging intervals or fixed length. No percentage, timestamp timezone, byte
+unit or cross-resource conversion is assumed for these new fields. In
+particular, memory and filesystem counters need not use the same units.
+
+Missing fields remain `None`; malformed known fields raise `CudyAPIError` through
+the router reader (`ValueError` when constructing models from responses directly).
+Numeric fields accept integers and integer strings, not booleans or fractional
+values. A missing model is never inferred from firmware or an address.
+
+System and resource `.raw` dictionaries retain all source fields as independent
+deep copies. Raw data and serial/MAC/IP attributes are excluded from model repr,
+but direct access and dataclass serialization can still expose private data.
+Do not log entire raw responses or serialized snapshots indiscriminately.
+
+Expanded parsing is covered by synthetic fixtures representing populated newer
+responses and sparse older variants; this does not establish every firmware's
+field meanings or a new live hardware-validation pass.
+
 ### Legacy clients and maintenance status
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_legacy_devices()` | `devices.get_devlist`, `[]` | Raw client-object array; null becomes `[]` |
-| `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | Raw metadata object or `None` for an empty-array response |
+| `get_legacy_devices()` | `devices.get_devlist`, `[]` | List of `FirmwareRecord`; null becomes `[]` |
+| `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | `FirmwareRecord` or `None` for an empty-array response |
 | `get_firmware_check_status(device_id)` | `system.upgrade_checkstatus`, `[device_id]` | Raw state string or `None` |
 | `get_apply_status()` | `apply_status`, `[]` | Raw state string or `None` |
 
@@ -100,9 +151,9 @@ workflow; use system configuration reads to inspect timezone settings.
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_cellular_status(interface)` | `cellular.getstatus`, `[interface]` | Raw modem-status object |
-| `get_cellular_data_config(interface)` | `cellular.get_data`, `[interface]` | List of raw data-plan objects; null becomes `[]` |
-| `get_cellular_statistics(interface)` | `cellular.get_statistics`, `[interface]` | Raw statistics object |
+| `get_cellular_status(interface)` | `cellular.getstatus`, `[interface]` | `FirmwareRecord` |
+| `get_cellular_data_config(interface)` | `cellular.get_data`, `[interface]` | List of `Configuration`; null becomes `[]` |
+| `get_cellular_statistics(interface)` | `cellular.get_statistics`, `[interface]` | `FirmwareRecord` |
 
 These helpers are source-backed and offline-tested, not hardware-verified.
 Provide a known cellular interface: the app uses `4g`, but the library supplies
@@ -129,10 +180,10 @@ The contributor checker only performs cellular status/statistics reads when
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_adshield_providers()` | `adshield.get_providers`, `[]` | Raw object containing the provider list, not a bare array |
-| `get_adshield_config()` | `adshield.get_conf`, `[]` | Raw configuration object |
-| `get_adshield_status(provider)` | `adshield.get_status`, `[provider]` | Raw provider-wrapped status object |
-| `get_adshield_stats(provider)` | `adshield.get_stats`, `[provider]` | Raw provider-wrapped statistics object |
+| `get_adshield_providers()` | `adshield.get_providers`, `[]` | `ProviderCatalog`; retains the outer object |
+| `get_adshield_config()` | `adshield.get_conf`, `[]` | `Configuration` |
+| `get_adshield_status(provider)` | `adshield.get_status`, `[provider]` | `FirmwareRecord`; retains the provider wrapper |
+| `get_adshield_stats(provider)` | `adshield.get_stats`, `[provider]` | `FirmwareRecord`; retains the provider wrapper |
 
 These contracts are source-backed and offline-tested. Providers/configuration
 have hardware observations; status/statistics remain unverified. See [compatibility](compatibility.md).
@@ -143,8 +194,8 @@ provider through the router. They are made once, without automatic replay after
 authentication rejection, and are not included in the compatibility checker.
 The checker reads only providers/configuration with `--include-config`.
 
-All four results must be objects: empty objects are preserved, while null and
-non-object responses raise `CudyAPIError`. Nested fields remain raw, including
+All four RPC results must be objects: empty objects are preserved, while null and
+non-object responses raise `CudyAPIError`. Nested fields are recursively represented, preserving
 unknown fields, provider-specific wrappers and provider error codes. A successful
 RPC response can still contain a provider failure (for example an `adguard.code`
 value); callers must inspect that provider result rather than assume success.
@@ -162,9 +213,9 @@ this batch pending verification of their external effects.
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
 | `get_online_interfaces()` | `net.online_interfaces`, `[]` | Raw interface-name strings; null becomes `[]` |
-| `get_vpn_profiles(category="clients")` | `vpn.get_conf`, `[category]` | Raw configuration object, retaining its outer fields |
-| `get_vpn_client_config(client_id)` | `vpn.get_conf`, `["clients", client_id]` | Raw configuration object, not an unwrapped client |
-| `get_vpn_connection_page(vpn_type, page=1)` | `vpn.get_connection`, `[vpn_type, start, end]` | Raw object containing `connection_list` and optional `total_cnt` |
+| `get_vpn_profiles(category="clients")` | `vpn.get_conf`, `[category]` | `Configuration`; retains the outer object |
+| `get_vpn_client_config(client_id)` | `vpn.get_conf`, `["clients", client_id]` | `Configuration`; not an unwrapped client |
+| `get_vpn_connection_page(vpn_type, page=1)` | `vpn.get_connection`, `[vpn_type, start, end]` | `ResponsePage[FirmwareRecord]` with entries and optional total count |
 
 These helpers are source-backed and offline-tested; see [compatibility](compatibility.md)
 for hardware-tested argument forms. Firmware-reported online interfaces are observations, not a new
@@ -183,7 +234,7 @@ Connection pages contain at most 100 requested entries using inclusive bounds
 (page 2 sends `[vpn_type, 101, 200]`). One page is not the complete connection
 list or historical traffic. `connection_list` must be an array of objects;
 non-null `total_cnt` must be a nonnegative integer. Missing counts remain
-missing. Handshake values and unknown fields remain raw; no timestamp units,
+missing. Handshake values and unknown fields are preserved without semantic conversion; no timestamp units,
 reachability or freshness are inferred. Pages may change between requests.
 Profile results must be objects; null is not converted to empty configuration.
 Wrong shapes raise `CudyAPIError`; unsupported methods remain explicit errors.
@@ -196,11 +247,11 @@ remain outside this passive-read batch pending further verification.
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_iptv_config()` | `iptv.get_conf`, `[]` | Raw object containing settings and available profiles |
-| `get_easymesh_config()` | `easymesh.get_conf`, `[]` | Raw EasyMesh settings object, not topology |
+| `get_iptv_config()` | `iptv.get_conf`, `[]` | `Configuration` |
+| `get_easymesh_config()` | `easymesh.get_conf`, `[]` | `Configuration`; not topology |
 | `get_multi_ssid_interfaces()` | `multi_ssid.get_all_multi_ssid_iface`, `[]` | List of section-name strings; null becomes `[]` |
-| `get_multi_ssid_config(section)` | `multi_ssid.get_conf`, `["wireless", section]` | Raw section object or `None` |
-| `get_parental_control_config(group=None)` | `parental_control.get_conf`, `[]` or `[group]` | List of raw group objects, including when selecting one group; null becomes `[]` |
+| `get_multi_ssid_config(section)` | `multi_ssid.get_conf`, `["wireless", section]` | `WirelessInterface` for the selected section, or `None` |
+| `get_parental_control_config(group=None)` | `parental_control.get_conf`, `[]` or `[group]` | List of `ParentalGroup`, also for one selected group; null becomes `[]` |
 
 These helpers are source-backed and offline-tested; see [compatibility](compatibility.md)
 for successful hardware reads, RPC rejections and untested forms. They
@@ -226,10 +277,10 @@ sections automatically.
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_client_names()` | `devices.get_name`, `[]` | List of raw client objects; null becomes `[]`, not a MAC-keyed map |
-| `get_client_traffic_page(page=1)` | `devices.traffic_stat`, `[start, end]` | Raw object with `devlist` and optional `devcnt` |
-| `get_wifi_frequencies()` | `wifi.get_freqlist`, `[]` | Raw object keyed by firmware interface names |
-| `get_wifi_scan_results(interface=None)` | `wifi.get_aplist`, `[]` or `[interface]` | Raw AP-object list or `None` |
+| `get_client_names()` | `devices.get_name`, `[]` | List of `ClientName`; null becomes `[]`, not a MAC-keyed map |
+| `get_client_traffic_page(page=1)` | `devices.traffic_stat`, `[start, end]` | `ResponsePage[ClientTraffic]` with entries and optional total count |
+| `get_wifi_frequencies()` | `wifi.get_freqlist`, `[]` | `FirmwareRecord` keyed by firmware interface names |
+| `get_wifi_scan_results(interface=None)` | `wifi.get_aplist`, `[]` or `[interface]` | List of `AccessPoint`, or `None` when unavailable |
 
 These helpers are source-backed and offline-tested, with model-specific hardware
 results recorded in [compatibility](compatibility.md). All preserve unknown fields. Name records do not establish
@@ -259,13 +310,13 @@ source-backed and offline-tested, with hardware results in [compatibility](compa
 
 | Helper | RPC | Result |
 | --- | --- | --- |
-| `get_system_config()` | `conf.get_system` | Raw system settings object, distinct from runtime status |
-| `get_ipv6_config()` | `conf.get_ipv6` | Raw IPv6 settings object |
-| `get_default_config()` | `conf.get_defaults` | Raw firmware defaults object; does not restore defaults |
-| `get_ddns_config()` | `conf.get_ddns` | Raw DDNS object, potentially including account credentials |
-| `get_connectivity_check_config()` | `conf.get_pingcheck` | Raw check settings object; does not initiate a check |
-| `get_auto_reboot_config()` | `conf.get_autoreboot` | Raw scheduling object or `None` for an empty-array response; never triggers reboot |
-| `get_qos_config()` | `conf.get_qos` | Firmware-defined JSON, including possible null |
+| `get_system_config()` | `conf.get_system` | `Configuration`; not runtime system status |
+| `get_ipv6_config()` | `conf.get_ipv6` | `Configuration` |
+| `get_default_config()` | `conf.get_defaults` | `Configuration`; does not restore defaults |
+| `get_ddns_config()` | `conf.get_ddns` | `Configuration`; may contain credentials |
+| `get_connectivity_check_config()` | `conf.get_pingcheck` | `Configuration`; does not initiate a check |
+| `get_auto_reboot_config()` | `conf.get_autoreboot` | `Configuration` or `None` for an empty-array response; never triggers reboot |
+| `get_qos_config()` | `conf.get_qos` | `ResponseValue`; structured firmware-defined result, including possible null |
 
 Object readers preserve empty objects and all nested/unknown fields. Automatic-reboot
 settings additionally accept the observed empty array as `None` (unavailable,

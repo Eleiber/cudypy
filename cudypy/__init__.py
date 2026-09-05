@@ -6,12 +6,27 @@ through their local API.
 """
 
 from .core.router import CudyRouter
+from .models.records import (
+    AccessPoint,
+    ClientName,
+    ClientTraffic,
+    Configuration,
+    ConfigurationSections,
+    FirmwareRecord,
+    ParentalGroup,
+    ProviderCatalog,
+    ResponsePage,
+    ResponseValue,
+    WdsStatus,
+    WorkMode,
+)
 from .models.device import Device
 from .models.status import (
     EthernetPort,
     InterfaceStatus,
     LanConfig,
     RateLimit,
+    ResourceUsage,
     SystemStatus,
     WirelessInterface,
 )
@@ -25,6 +40,18 @@ from .exceptions.api_exceptions import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "AccessPoint",
+    "ClientName",
+    "ClientTraffic",
+    "Configuration",
+    "ConfigurationSections",
+    "FirmwareRecord",
+    "ParentalGroup",
+    "ProviderCatalog",
+    "ResponsePage",
+    "ResponseValue",
+    "WdsStatus",
+    "WorkMode",
     "CudyRouter",
     "Device",
     "EthernetPort",
@@ -33,6 +60,7 @@ __all__ = [
     "SystemStatus",
     "InterfaceStatus",
     "RateLimit",
+    "ResourceUsage",
     "CudyAPIError",
     "CudyAuthError",
     "CudyDiscoveryError",

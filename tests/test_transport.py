@@ -1,5 +1,7 @@
 """Transport regressions; all responses are synthetic and never sent to routers."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +14,7 @@ def test_token_session_needs_neither_password_nor_discovery():
         with patch.object(router, "_discover_salt_and_devid") as discovery:
             with patch.object(router.session, "post") as post:
                 post.return_value.json.return_value = {"result": {"model": "WR3000"}}
-                assert router.get_system_info() == {"model": "WR3000"}
+                assert response_raw(router.get_system_info()) == {"model": "WR3000"}
                 discovery.assert_not_called()
                 assert "devid" not in post.call_args.kwargs["json"]
                 assert post.call_args.kwargs["params"] == {"auth": "session-token"}
@@ -148,8 +150,13 @@ def test_native_device_fields():
 def test_additional_read_payloads(reader, method):
     with CudyRouter("http://192.0.2.1", auth_token="session-token") as router:
         with patch.object(router.session, "post") as post:
-            post.return_value.json.return_value = {"result": {"firmware_field": [1, 2]}}
-            assert getattr(router, reader)() == {"firmware_field": [1, 2]}
+            result = (
+                [{"port": 1, "future": [1, 2]}]
+                if reader == "get_ethernet_status"
+                else {"firmware_field": [1, 2]}
+            )
+            post.return_value.json.return_value = {"result": result}
+            assert response_raw(getattr(router, reader)()) == result
             assert post.call_args.kwargs["json"] == {"method": method, "params": []}
 
 
@@ -211,6 +218,7 @@ def test_unsupported_firmware_method_retains_rpc_code():
 
 def test_html_response_is_reported_as_invalid_json():
     import requests
+
     response = requests.Response()
     response.status_code = 200
     response._content = b"<html>Login required</html>"

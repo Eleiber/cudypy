@@ -1,5 +1,7 @@
 """Ad-blocking contracts; all requests and provider responses are synthetic."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -44,7 +46,7 @@ def test_exact_payload_and_raw_wrapper(reader, args, method, params, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)(*args) == result
+            assert response_raw(getattr(router, reader)(*args)) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {"method": method, "params": params}
 
@@ -64,7 +66,7 @@ def test_empty_is_preserved_and_unsupported_is_not_empty(reader, args, method, p
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": {}}
-            assert getattr(router, reader)(*args) == {}
+            assert response_raw(getattr(router, reader)(*args)) == {}
             post.return_value.json.return_value = {"error": {"code": -32601}}
             with pytest.raises(CudyUnsupportedError):
                 getattr(router, reader)(*args)

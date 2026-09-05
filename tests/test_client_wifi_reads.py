@@ -1,5 +1,7 @@
 """Passive client/Wi-Fi read contracts using synthetic fixtures only."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -52,7 +54,7 @@ def test_wire_shapes_and_raw_preservation(reader, args, method, params, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)(*args) == result
+            assert response_raw(getattr(router, reader)(*args)) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {"method": method, "params": params}
 
@@ -122,6 +124,6 @@ def test_unsupported_and_token_expiry_do_not_fallback_or_scan(reader, args, meth
 def test_null_names_and_missing_count():
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router, "call_api", return_value={"result": None}):
-            assert router.get_client_names() == []
+            assert response_raw(router.get_client_names()) == []
         with patch.object(router, "call_api", return_value={"result": {"devlist": []}}):
-            assert router.get_client_traffic_page() == {"devlist": []}
+            assert response_raw(router.get_client_traffic_page()) == {"devlist": []}

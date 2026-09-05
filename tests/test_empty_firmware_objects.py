@@ -1,5 +1,7 @@
 """Observed empty-array variants, using synthetic responses only."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 import pytest
 from cudypy import CudyRouter, CudyAPIError, CudyUnsupportedError
@@ -13,7 +15,7 @@ def test_available_and_unavailable_objects(reader, value, expected):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": value}
-            assert getattr(router, reader)() == expected
+            assert response_raw(getattr(router, reader)()) == expected
             post.assert_called_once()
 
 

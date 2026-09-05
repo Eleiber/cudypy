@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Return models from ordinary getters, with `.raw` exports and `call_api()` for
+  wire data. Serialize model snapshots explicitly in the dashboard.
+- Add client/work-mode/provider/page models and recursively deserialize unmapped
+  firmware structures without guessing their schemas.
+
+- Expand typed system snapshots with nested resource counters and hardware/status
+  fields, retaining native units, missing values and raw data. Make typed snapshots
+  the introductory usage example.
+- Record user-reported default-transport password login and discovery on WR3000 V2.0.
+
 - Record successful password authentication, incorrect-password rejection and
   two coexisting API sessions on WR3000H V1.0. Distinguish verified authentication
   logic from unverified discovery, default transport and session-lifecycle behavior.

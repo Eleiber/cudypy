@@ -181,7 +181,7 @@ def get_system_info():
             return jsonify({"error": "Authentication failed"}), 401
 
         info = router.get_system_info()
-        return jsonify({"system": info})
+        return jsonify({"system": info.raw})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -195,7 +195,7 @@ def get_network_status():
             return jsonify({"error": "Authentication failed"}), 401
 
         status = router.get_network_status()
-        return jsonify({"network": status})
+        return jsonify({"network": status.raw})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

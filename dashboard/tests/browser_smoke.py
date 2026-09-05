@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from dashboard import app as dashboard
-from cudypy import Device
+from cudypy import Device, SystemStatus, InterfaceStatus
 from playwright.sync_api import sync_playwright
 
 
@@ -25,6 +25,8 @@ def main():
         args.screenshots.mkdir(parents=True, exist_ok=True)
     router = Mock()
     router.authenticate.return_value = True
+    router.get_system_info.return_value = SystemStatus.from_api_response({"model": "Synthetic"})
+    router.get_network_status.return_value = InterfaceStatus.from_api_response({"is_up": True})
     router.get_devices.return_value = [
         Device(
             "02:00:00:00:00:01",

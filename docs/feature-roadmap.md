@@ -1,5 +1,9 @@
 # Feature coverage and limits
 
+The [model reference](models.md) covers every current getter with domain
+models, new record/page models and flexible firmware-specific structures. Full
+typed field coverage remains distinct from object-returning getter coverage.
+
 The library has grown beyond the initial transport refactor, but does not claim
 complete or majority coverage of every APK/panel operation.
 Read and write structures are derived from the app and web interface. Support
@@ -11,10 +15,10 @@ RPC candidates and the remaining browser inventory separately.
 | Area | Present | Work remaining |
 | --- | --- | --- |
 | Transport/auth | Token sessions, bounded read retries, numeric/unsupported errors | Preserve behavior as coverage expands |
-| System/network | Raw and typed system/interface status, typed Ethernet ports, available work modes, typed LAN configuration and raw DHCP reads | Hardware/model variation retained through optional and raw fields |
+| System/network | System/interface models, Ethernet ports, work modes, LAN configuration and DHCP section models | Hardware/model variation retained through optional fields and `.raw` exports |
 | Clients | Full list, filters, direct details, rate-limit and schedule reads; offline-tested controls; explicit unknown activity, elapsed seconds and native counters | Counter viewpoint/reset semantics and hardware write behavior remain explicitly unverified |
-| Wi-Fi | WDS/WPS status, schedules, raw configuration, typed selected interface, advanced source-backed configuration writes | Hardware write compatibility intentionally unverified; firmware-specific setting constraints remain caller-managed |
-| Mesh/VPN | Mesh topology, source-backed per-node client pages, raw VPN status/configuration with distinct capability handling | Node-specific mesh hardware compatibility unverified; no guessed node IDs or topology mutations |
+| Wi-Fi | WDS/WPS status, schedule/configuration records, typed selected interface, advanced source-backed configuration writes | Hardware write compatibility intentionally unverified; firmware-specific setting constraints remain caller-managed |
+| Mesh/VPN | Structured topology/status/configuration and explicit client/connection page models with distinct capability handling | Detailed field schemas and node-specific mesh hardware compatibility remain unverified; no guessed node IDs or topology mutations |
 | Diagnostics/maintenance | Traffic read, inherited reboot method | Preserve the no-live-mutations rule; no scans/upgrades/reset probes |
 | Packaging/docs | Offline suite, installable package, expanded examples, protocol/live evidence and compatibility guide | See explicit compatibility limits in the compatibility guide |
 

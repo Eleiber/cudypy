@@ -7,6 +7,11 @@ for tested models, firmware and verification limits.
 The package is named `cudypy`.
 Install from this source tree, not an assumed PyPI release.
 
+Use `router.get_*()` for object-based reads: system/client models,
+nested response records and explicit page objects. See the
+[model reference](docs/models.md) for return types, fields and firmware-specific
+extensions.
+
 For monitoring graphs, client drill-down and search/sorting, see the
 [local dashboard](dashboard/README.md). For asyncio integration and native
 async tradeoffs, see [async feasibility](docs/async.md).
@@ -39,7 +44,10 @@ try:
         auth_token=os.environ["CUDY_ROUTER_TOKEN"],
         timeout=10,
     ) as router:
-        print(router.get_system_info())
+        status = router.get_system_status()
+        print(status.model, status.firmware, status.uptime_seconds)
+        if status.memory is not None:
+            print(status.memory.available)  # Firmware-native counter units.
         for device in router.get_devices():
             print(device, device.connection_type)
 except CudyAPIError as error:
@@ -50,6 +58,29 @@ Token sessions do not need mDNS, a device ID, or your password. Expired tokens
 raise `CudyAuthError`; obtain a fresh token and create a new client.
 Closing a client only closes local resources; it does not log out the browser
 or change router configuration.
+
+## Example usage and output
+
+With a configured `router` (synthetic values shown):
+
+```pycon
+>>> status = router.get_system_info()
+>>> type(status).__name__
+'SystemStatus'
+>>> status.model
+'Example router'
+>>> status.uptime_seconds
+3600
+>>> status.memory.available
+64000
+>>> status.board_name is None
+True
+>>> status.raw["uptime"]
+'3600'
+```
+
+Resource counters retain firmware-native units; a missing memory object is `None`.
+See the [model reference](docs/models.md) for other response types.
 
 ## Password authentication
 
@@ -64,7 +95,7 @@ with CudyRouter(
 ) as router:
     if not router.authenticate():
         raise RuntimeError("Router authentication failed")
-    print(router.get_system_info())
+    print(router.get_system_status().firmware)
 ```
 
 Without an explicit salt, the client discovers the router's salt over mDNS.
@@ -81,15 +112,24 @@ replayed.
 
 ## API
 
+Ordinary getters return models by default. The
+[model reference](docs/models.md#models-and-coverage) lists all return types.
+
+Typed readers return snapshots: accessing their attributes does not send network
+requests. Missing values remain `None`; `.raw` retains firmware-specific fields.
+See [system-status fields and units](docs/feature-reads.md#typed-system-status)
+for nested resource objects. Use `.raw` or `call_api()` for original wire data.
+
 | Method | Result |
 | --- | --- |
-| `get_system_info()` | Raw system information dictionary |
+| `get_system_status()` | `SystemStatus` with nested resource snapshots |
+| `get_system_info()` | `SystemStatus` (same as `get_system_status()`) |
 | `get_devices()` | List of `Device` instances |
-| `get_network_status(interface="wan")` | Raw status dictionary for that interface |
-| `get_supported_features()` | Raw firmware feature declarations |
-| `get_ethernet_status()` | Raw Ethernet port status |
-| `get_mesh_clients()` | Raw mesh client data |
-| `get_traffic_stats()` | Raw network traffic statistics |
+| `get_network_status(interface="wan")` | `InterfaceStatus` |
+| `get_supported_features()` | Structured firmware declarations |
+| `get_ethernet_status()` | List of `EthernetPort` |
+| `get_mesh_clients()` | Structured firmware-dependent mesh result |
+| `get_traffic_stats()` | Structured firmware-dependent traffic result |
 | `get_online_devices()` | Devices passing the legacy inactivity heuristic |
 | `get_wifi_devices()`, `get_ethernet_devices()` | Devices filtered by interface |
 | `get_device_by_mac(mac)`, `get_device_by_ip(ip)` | First matching device or `None` |

@@ -1,6 +1,7 @@
 # Wireless configuration
 
-`get_wireless_config()` returns the firmware's section dictionary unchanged.
+`get_wireless_config()` returns a `ConfigurationSections` snapshot; `.raw`
+exports the original firmware section dictionary.
 `get_wireless_interface(section)` reads that configuration and returns a
 `WirelessInterface` for a caller-selected section, or `None` when absent.
 Use the actual section key from the configuration, not an assumed radio name,

@@ -1,5 +1,7 @@
 """Configuration read contracts; synthetic responses, never router writes."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -23,7 +25,7 @@ def test_exact_payload_and_lossless_result(reader, method, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic-token") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)() == result
+            assert response_raw(getattr(router, reader)()) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {"method": method, "params": []}
 
@@ -43,7 +45,7 @@ def test_object_contract_rejects_wrong_shapes_without_disclosing_values(reader, 
 def test_qos_keeps_firmware_defined_json(result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic-token") as router:
         with patch.object(router, "call_api", return_value={"result": result}):
-            assert router.get_qos_config() == result
+            assert response_raw(router.get_qos_config()) == result
 
 
 @pytest.mark.parametrize("reader,method", READERS)

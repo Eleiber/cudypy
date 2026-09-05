@@ -1,5 +1,7 @@
 """Passive configuration RPC contracts, verified without hardware mutations."""
 
+from tests import response_raw
+
 from unittest.mock import patch
 
 import pytest
@@ -51,7 +53,7 @@ def test_exact_request_and_lossless_response(reader, args, method, params, resul
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": result}
-            assert getattr(router, reader)(*args) == result
+            assert response_raw(getattr(router, reader)(*args)) == result
             post.assert_called_once()
             assert post.call_args.kwargs["json"] == {"method": method, "params": params}
 
@@ -72,7 +74,7 @@ def test_exact_request_and_lossless_response(reader, args, method, params, resul
 def test_absent_and_empty_results(reader, args, result, expected):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic") as router:
         with patch.object(router, "call_api", return_value={"result": result}):
-            assert getattr(router, reader)(*args) == expected
+            assert response_raw(getattr(router, reader)(*args)) == expected
 
 
 @pytest.mark.parametrize(

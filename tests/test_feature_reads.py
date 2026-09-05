@@ -1,5 +1,7 @@
 """Source-backed feature reads and firmware result variants."""
 
+from tests import response_raw
+
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -44,7 +46,7 @@ def test_wire_payloads(reader, args, method, params, result):
     with CudyRouter("http://192.0.2.1", auth_token="test-token") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"id": None, "result": result, "error": None}
-            assert getattr(router, reader)(*args) == result
+            assert response_raw(getattr(router, reader)(*args)) == result
             assert post.call_args.kwargs["json"] == {"method": method, "params": params}
 
 
@@ -77,7 +79,7 @@ def test_absent_schedule_is_empty_but_unsupported_is_error():
     with CudyRouter("http://192.0.2.1", auth_token="test-token") as router:
         with patch.object(router.session, "post") as post:
             post.return_value.json.return_value = {"result": None, "error": None}
-            assert router.get_wifi_schedule() == []
+            assert response_raw(router.get_wifi_schedule()) == []
             post.return_value.json.return_value = {"result": None, "error": {"code": -32601}}
             with pytest.raises(CudyUnsupportedError) as error:
                 router.get_client_internet_schedule("020000000001")

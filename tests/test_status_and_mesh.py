@@ -1,3 +1,5 @@
+
+from tests import response_raw
 from unittest.mock import patch
 
 import pytest
@@ -60,7 +62,7 @@ def test_mesh_inclusive_page_bounds_and_total_preserved():
         with patch.object(router.session, "post") as post:
             result = {"devlist": [{"macaddr": "020000000001"}], "devcnt": 101}
             post.return_value.json.return_value = {"result": result}
-            assert router.get_mesh_device_page("synthetic-node", 2) == result
+            assert response_raw(router.get_mesh_device_page("synthetic-node", 2)) == result
             assert post.call_args.kwargs["json"] == {
                 "method": "mesh.get_devices",
                 "params": ["synthetic-node", 101, 200],
