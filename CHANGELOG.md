@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add system, IPv6, defaults, DDNS, connectivity-check, automatic-reboot and QoS
+  configuration readers with lossless results, offline contract tests and opt-in
+  compatibility checks. Document missing read candidates and verification limits.
+
 - Add offline-capable dashboard traffic history, client drill-down, search/sort,
   and bounded polling with pause/resume and explicit missing-data gaps.
 - Refresh older guides, correct unknown-activity documentation, use model-only

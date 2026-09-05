@@ -28,7 +28,7 @@ def main():
     parser.add_argument(
         "--include-config",
         action="store_true",
-        help="Read LAN/DHCP/wireless/VPN configuration; report shapes only",
+        help="Read configuration, including potentially sensitive fields; report shapes only",
     )
     parser.add_argument(
         "--client-mac", help="Optional known client for detail/limit/schedule reads"
@@ -62,6 +62,13 @@ def main():
                     dhcp_config=router.get_dhcp_config,
                     wireless_config=router.get_wireless_config,
                     vpn_config=router.get_vpn_config,
+                    system_config=router.get_system_config,
+                    ipv6_config=router.get_ipv6_config,
+                    default_config=router.get_default_config,
+                    ddns_config=router.get_ddns_config,
+                    connectivity_check_config=router.get_connectivity_check_config,
+                    auto_reboot_config=router.get_auto_reboot_config,
+                    qos_config=router.get_qos_config,
                 )
             if args.client_mac:
                 reads.update(

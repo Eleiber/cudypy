@@ -23,6 +23,10 @@ Observed differences:
 
 ## Verification limits
 
+- The additional system, IPv6, defaults, DDNS, connectivity-check, automatic-reboot
+  and QoS configuration helpers are offline-tested only; their availability on
+  the listed models has not yet been checked.
+
 - Hardware checks used existing session tokens. Password login is covered by
   offline tests but was not hardware-verified in these checks.
 - Mutations are derived from app request structures and tested offline only.

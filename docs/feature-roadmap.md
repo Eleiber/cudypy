@@ -5,6 +5,9 @@ complete or majority coverage of every APK/panel operation.
 Read and write structures are derived from the app and web interface. Support
 is established per operation, not inferred from its name alone.
 
+The [read-method checklist](read-coverage.md) tracks dedicated helpers, missing
+RPC candidates and the remaining browser inventory separately.
+
 | Area | Present | Work remaining |
 | --- | --- | --- |
 | Transport/auth | Token sessions, bounded read retries, numeric/unsupported errors | Preserve behavior as coverage expands |

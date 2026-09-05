@@ -376,6 +376,13 @@ class CudyRouter:
             "conf.get_internet_schedule",
             "devices.get_devinfo",
             "conf.get_all",
+            "conf.get_system",
+            "conf.get_ipv6",
+            "conf.get_defaults",
+            "conf.get_ddns",
+            "conf.get_pingcheck",
+            "conf.get_autoreboot",
+            "conf.get_qos",
         }
     )
 
@@ -566,11 +573,42 @@ class CudyRouter:
         except (TypeError, ValueError):
             raise CudyAPIError("Malformed interface status") from None
 
-    def _read_config(self, sections: List[str]) -> Dict[str, Any]:
-        result = self.call_api("conf.get_all", sections)["result"]
+    def _read_object(self, method: str, params: Optional[List[Any]] = None) -> Dict[str, Any]:
+        result = self.call_api(method, params)["result"]
         if not isinstance(result, dict):
-            raise CudyAPIError("Configuration response must be an object")
+            raise CudyAPIError("Expected an object from " + method)
         return result
+
+    def _read_config(self, sections: List[str]) -> Dict[str, Any]:
+        return self._read_object("conf.get_all", sections)
+
+    def get_system_config(self) -> Dict[str, Any]:
+        """Read system settings, not runtime system status; preserve raw fields."""
+        return self._read_object("conf.get_system")
+
+    def get_ipv6_config(self) -> Dict[str, Any]:
+        """Read IPv6 settings without testing connectivity or changing interfaces."""
+        return self._read_object("conf.get_ipv6")
+
+    def get_default_config(self) -> Dict[str, Any]:
+        """Read firmware defaults without restoring them; may contain credentials."""
+        return self._read_object("conf.get_defaults")
+
+    def get_ddns_config(self) -> Dict[str, Any]:
+        """Read DDNS settings; may include account credentials. Do not log them."""
+        return self._read_object("conf.get_ddns")
+
+    def get_connectivity_check_config(self) -> Dict[str, Any]:
+        """Read configured connectivity-check targets; does not run a check."""
+        return self._read_object("conf.get_pingcheck")
+
+    def get_auto_reboot_config(self) -> Dict[str, Any]:
+        """Read reboot scheduling settings without scheduling or causing a reboot."""
+        return self._read_object("conf.get_autoreboot")
+
+    def get_qos_config(self) -> Any:
+        """Read firmware-defined QoS JSON; preserve null and all result shapes."""
+        return self.call_api("conf.get_qos")["result"]
 
     def get_lan_config(self) -> LanConfig:
         """Read configured LAN fields; this is not live interface status."""

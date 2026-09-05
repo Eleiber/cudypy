@@ -18,6 +18,7 @@ def verifier(monkeypatch, tmp_path):
     router.get_system_info.return_value = {"firmware": "synthetic-private"}
     router.get_devices.return_value = []
     router.get_wireless_config.return_value = {"private-section": {"key": "synthetic-secret"}}
+    router.get_ddns_config.return_value = {"password": "synthetic-ddns-secret"}
     monkeypatch.setattr(verify_read_only, "CudyRouter", MagicMock(return_value=router))
     monkeypatch.setattr(
         "sys.argv",
@@ -40,12 +41,30 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
     assert report["wireless_config"]["type"] == "object"
     assert all(
         word not in output
-        for word in ["synthetic-private", "synthetic-secret", "private-section", "synthetic-token"]
+        for word in [
+            "synthetic-private",
+            "synthetic-secret",
+            "private-section",
+            "synthetic-token",
+            "synthetic-ddns-secret",
+        ]
     )
     methods = [call[0] for call in verifier.method_calls]
     assert all(name.startswith("get_") for name in methods)
     assert "get_mesh_device_page" not in methods
     assert "get_client_info" not in methods
+    verifier.get_ddns_config.assert_called_once_with()
+    verifier.get_auto_reboot_config.assert_called_once_with()
+
+
+def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", [arg for arg in sys.argv if arg != "--include-config"])
+    assert verify_read_only.main() == 0
+    verifier.get_ddns_config.assert_not_called()
+    verifier.get_default_config.assert_not_called()
+    verifier.get_auto_reboot_config.assert_not_called()
 
 
 def test_optional_unsupported_read_does_not_claim_success(verifier, capsys):

@@ -66,6 +66,30 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Additional configuration reads
+
+All of these methods send an empty positional argument list (`[]`). They are
+source-backed and offline-tested, not yet hardware-verified.
+
+| Helper | RPC | Result |
+| --- | --- | --- |
+| `get_system_config()` | `conf.get_system` | Raw system settings object, distinct from runtime status |
+| `get_ipv6_config()` | `conf.get_ipv6` | Raw IPv6 settings object |
+| `get_default_config()` | `conf.get_defaults` | Raw firmware defaults object; does not restore defaults |
+| `get_ddns_config()` | `conf.get_ddns` | Raw DDNS object, potentially including account credentials |
+| `get_connectivity_check_config()` | `conf.get_pingcheck` | Raw check settings object; does not initiate a check |
+| `get_auto_reboot_config()` | `conf.get_autoreboot` | Raw scheduling object; does not schedule or trigger reboot |
+| `get_qos_config()` | `conf.get_qos` | Firmware-defined JSON, including possible null |
+
+Object readers preserve empty objects and all nested/unknown fields; null and
+non-object responses raise `CudyAPIError`. QoS is intentionally unconstrained:
+the app consumes a generic JSON value, not a confirmed fixed model. No helper
+coerces string flags, times, addresses or rates into guessed types or units.
+Do not log these results; DDNS and defaults can contain secrets. Unsupported
+methods raise `CudyUnsupportedError`, never a fabricated empty configuration.
+
+See the [coverage checklist](read-coverage.md) for implemented and missing RPCs.
+
 These request structures were derived from the Cudy app's status and
 configuration workflows. Availability varies by firmware; see
 [compatibility](compatibility.md). Unsupported methods remain distinct from
