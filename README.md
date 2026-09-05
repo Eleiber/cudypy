@@ -54,6 +54,11 @@ or change router configuration.
 
 ## Password authentication
 
+Successful login and incorrect-password rejection were checked on WR3000H V1.0
+using an explicit salt and an alternate HTTP adapter. See the
+[authentication verification scope](docs/compatibility.md#password-authentication-and-concurrent-sessions)
+for discovery, transport and concurrent-session limits.
+
 ```python
 import os
 from cudypy import CudyRouter

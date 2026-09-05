@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Record successful password authentication, incorrect-password rejection and
+  two coexisting API sessions on WR3000H V1.0. Distinguish verified authentication
+  logic from unverified discovery, default transport and session-lifecycle behavior.
+
 - Verify 38 passive-read helpers on WR3000H and WR3000 firmware. Handle observed
   empty-array automatic-reboot and firmware-metadata responses as unavailable
   objects (`None`); preserve firmware-specific RPC errors and document limits.

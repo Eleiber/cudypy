@@ -50,6 +50,27 @@ per-client Internet schedules returned -32601 on both models. Ethernet
 auto-negotiation fields vary (`auto` versus `autoneg`); model and WDS fields may
 be absent. Those observations are not universal firmware rules.
 
+## Password authentication and concurrent sessions
+
+Password authentication was checked on WR3000H V1.0 with firmware
+2.4.5-20250515-105059. A successful challenge/login exchange was followed by an
+authenticated system-status read. These checks exercised the library's
+authentication logic with an explicitly supplied salt and an alternate HTTP
+adapter; they do not verify automatic mDNS discovery or the default HTTP
+transport for password login.
+
+Two independent password logins returned distinct session tokens. The first
+session remained valid after the second login, and both completed two rounds
+of concurrent system-status reads without HTTP/RPC errors or automatic
+reauthentication. Logins were sequential; reads were concurrent. This establishes
+two coexisting API sessions on the tested firmware, not a maximum session count,
+simultaneous-login behavior, session lifetime or browser-session compatibility.
+
+One deliberately incorrect password was rejected with RPC error `-32003` over
+HTTP 200. `authenticate()` returned `False`, left no session token and cleared
+local cookies. No login retry or authenticated status request followed the
+rejection. Lockout thresholds and repeated-failure behavior were not tested.
+
 ## Still unverified
 
 - Selected VPN client profiles, non-default VPN categories and connection pages.
@@ -58,8 +79,10 @@ be absent. Those observations are not universal firmware rules.
 - Cellular helpers: no cellular-capable model has been verified.
 - Ad-blocking provider status/statistics and other external-provider behavior.
 - Nonempty automatic-reboot and firmware-metadata objects on hardware.
-- Password login, mutation behavior, counter units/reset boundaries and activity
-  heuristics. No hardware writes, scans, exports or SMS reads were performed.
+- Password login on WR3000 V2.0, automatic mDNS discovery, default-transport
+  password login and automatic reauthentication after session expiry.
+- Mutation behavior, counter units/reset boundaries and activity heuristics.
+  No hardware writes, scans, exports or SMS reads were performed.
 - Python versions other than 3.12 and full admin-page field parity.
 
 Credentials and raw responses are not distributed as fixtures. Regression tests
