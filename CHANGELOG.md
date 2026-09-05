@@ -10,11 +10,12 @@
 - Expand typed system snapshots with nested resource counters and hardware/status
   fields, retaining native units, missing values and raw data. Make typed snapshots
   the introductory usage example.
-- Record user-reported default-transport password login and discovery on WR3000 V2.0.
+- Verify default-transport password login, automatic salt discovery and authenticated
+  system-info reads on WR3000H V1.0 and WR3000 V2.0.
 
 - Record successful password authentication, incorrect-password rejection and
-  two coexisting API sessions on WR3000H V1.0. Distinguish verified authentication
-  logic from unverified discovery, default transport and session-lifecycle behavior.
+  two coexisting API sessions on WR3000H V1.0. Keep session expiry and lifecycle
+  limits separate from verified authentication behavior.
 
 - Verify 38 passive-read helpers on WR3000H and WR3000 firmware. Handle observed
   empty-array automatic-reboot and firmware-metadata responses as unavailable
