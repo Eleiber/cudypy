@@ -1,63 +1,67 @@
 # Compatibility
 
-CudyPy is experimental. A model name alone does not determine which RPCs are
-available; firmware and configuration also matter.
+CudyPy is experimental. Firmware and configuration determine availability, not
+model name alone. Authenticated passive reads were checked on:
 
 | Model | Firmware evaluated |
 | --- | --- |
 | WR3000H V1.0 | 2.4.5-20250515-105059 |
 | WR3000 V2.0 | 2.5.24-20260727-122111 |
 
-Selected authenticated reads succeeded on these versions: system/interface
-status, clients and client details, Ethernet ports, features, mesh topology,
-work modes, Wi-Fi schedules and WDS/WPS status, LAN/DHCP/wireless configuration,
-and VPN configuration. Empty/null responses are legitimate for some operations.
+## Expanded hardware checks
 
-Observed differences:
+The expanded pass exercised 38 helpers on each model. After correcting two
+empty-array response variants, 28 helpers returned successfully on WR3000H and
+36 on WR3000. Remaining outcomes were explicit RPC errors, not hidden fallbacks.
+Success verifies handling of the observed response, not every field, argument
+form or populated configuration variant.
 
-- `net.traffic_stat` and `vpn.get_status` were unavailable (-32601) on the
-  evaluated WR3000H firmware; the evaluated WR3000 firmware supported them.
-- Per-client Internet schedules were unavailable on both evaluated versions.
-- Ethernet auto-negotiation fields vary (`auto` versus `autoneg`).
-- System model names and WDS fields may be absent.
+Both models returned supported responses for system/interface status, extended
+and legacy clients, client-name records, features, Ethernet ports, mesh topology,
+online interfaces, work modes, Wi-Fi schedules, WDS/WPS status, frequency lists,
+existing AP results, general VPN settings, LAN/DHCP/wireless configuration,
+system/IPv6/default/DDNS/connectivity-check settings, IPTV and parental groups.
+Empty responses do not prove support for all nonempty configurations.
 
-## Verification limits
+| Read / observed variant | WR3000H | WR3000 |
+| --- | --- | --- |
+| Client traffic page, network traffic | -32601 | Object |
+| VPN status | -32601 | List |
+| VPN profiles, `["clients"]` | -32601 | Object |
+| QoS configuration | -32601 | Object |
+| EasyMesh configuration | -32601 | -32601 |
+| Multi-SSID interface listing | -32004 | -32004 |
+| Ad-blocking providers and configuration | -32601 | Object |
+| Configuration-apply status | -32601 | String |
+| Automatic-reboot settings | Empty array → `None` | Empty array → `None` |
+| Firmware metadata, no arguments | Empty array → `None` | Empty array → `None` |
 
-- Legacy client arrays, firmware metadata/check state and configuration-apply
-  status are source-backed and offline-tested only, not hardware-verified.
+`-32601` is method-not-found. The multi-SSID `-32004` rejection is preserved as
+an RPC error; it is not classified as method-not-found or an empty interface list.
+No setting was changed to force a different response.
 
-- Cellular status, data-plan settings and statistics are source-backed and
-  offline-tested only. No cellular-capable model has been verified for these
-  helpers; the listed router models do not establish modem support.
+`get_auto_reboot_config()` and `get_firmware_update_info()` now accept the
+observed empty array as unavailable object data and return `None`. This does not
+mean scheduling is disabled, firmware is current, or no upgrade exists. Objects
+remain raw; other malformed response types are rejected.
 
-- Ad-blocking provider/configuration/status/statistics helpers are source-backed
-  and offline-tested only. Provider-service behavior and hardware support remain
-  unverified; status/statistics are not automatically replayed or probed.
+Earlier hardware checks also covered individual client details and rate limits;
+per-client Internet schedules returned -32601 on both models. Ethernet
+auto-negotiation fields vary (`auto` versus `autoneg`); model and WDS fields may
+be absent. Those observations are not universal firmware rules.
 
-- Online interface names, VPN profile reads and VPN connection pages are
-  source-backed/offline-tested only; hardware availability remains unverified.
+## Still unverified
 
-- IPTV, EasyMesh, multi-SSID and parental-control configuration helpers are
-  source-backed and offline-tested; hardware availability remains unverified.
+- Selected VPN client profiles, non-default VPN categories and connection pages.
+- Selected multi-SSID sections, filtered parental groups, node-specific mesh
+  client pages and target-specific firmware-check state.
+- Cellular helpers: no cellular-capable model has been verified.
+- Ad-blocking provider status/statistics and other external-provider behavior.
+- Nonempty automatic-reboot and firmware-metadata objects on hardware.
+- Password login, mutation behavior, counter units/reset boundaries and activity
+  heuristics. No hardware writes, scans, exports or SMS reads were performed.
+- Python versions other than 3.12 and full admin-page field parity.
 
-- Client-name records, paged client traffic, Wi-Fi frequencies and existing AP
-  result reads are source-backed/offline-tested only, not hardware-verified.
-
-- The additional system, IPv6, defaults, DDNS, connectivity-check, automatic-reboot
-  and QoS configuration helpers are offline-tested only; their availability on
-  the listed models has not yet been checked.
-
-- Hardware checks used existing session tokens. Password login is covered by
-  offline tests but was not hardware-verified in these checks.
-- Mutations are derived from app request structures and tested offline only.
-  No claim of live write compatibility is made.
-- Node-specific mesh pages require a known node identifier and remain
-  offline-tested; mesh topology reads do not prove page support.
-- The suite has been run on Python 3.12. Other declared Python versions have
-  not been independently runtime-verified.
-- Inactivity is a heuristic, not reachability. Client-counter direction and
-  reset behavior remain uncertain; see [device semantics](device-semantics.md).
-
-Unsupported methods raise `CudyUnsupportedError`; other failures retain their
-numeric RPC code where supplied. Do not treat an unsupported response as empty
-configuration or assume a read being available proves the related write works.
+Credentials and raw responses are not distributed as fixtures. Regression tests
+use synthetic data. Unsupported methods raise `CudyUnsupportedError`; other
+failures retain their RPC code. Successful reads do not prove related writes work.

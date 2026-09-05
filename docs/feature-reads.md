@@ -71,11 +71,12 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
 | `get_legacy_devices()` | `devices.get_devlist`, `[]` | Raw client-object array; null becomes `[]` |
-| `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | Raw available-firmware metadata object |
+| `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | Raw metadata object or `None` for an empty-array response |
 | `get_firmware_check_status(device_id)` | `system.upgrade_checkstatus`, `[device_id]` | Raw state string or `None` |
 | `get_apply_status()` | `apply_status`, `[]` | Raw state string or `None` |
 
-These helpers are source-backed/offline-tested only, not hardware-verified.
+These helpers are source-backed and offline-tested. See [compatibility](compatibility.md)
+for the hardware-tested forms and remaining limits.
 The legacy client reader does not paginate, produce typed `Device` objects or
 act as an automatic fallback when `get_devices()` fails. It retains unknown
 record fields but makes no completeness guarantee beyond the returned array.
@@ -86,8 +87,9 @@ nonempty target ID, sent unchanged. The app uses `000000000000` for its local
 target, but no target is selected automatically and no firmware support for a
 particular ID is assumed. Both status readers perform one read without polling
 or waiting. Unknown state strings, empty strings and null remain distinct; no
-state is guessed to mean success. Object metadata rejects null/non-object
-responses. Malformed shapes raise `CudyAPIError`; unsupported RPCs remain errors.
+state is guessed to mean success. Empty-array firmware metadata becomes `None`
+(unavailable), not a claim that firmware is current. Null and other non-object
+responses are rejected. Malformed shapes raise `CudyAPIError`; unsupported RPCs remain errors.
 
 These methods never initiate an update check, download/install firmware, apply
 configuration or change timezone. They are not automatically called by the
@@ -132,7 +134,8 @@ The contributor checker only performs cellular status/statistics reads when
 | `get_adshield_status(provider)` | `adshield.get_status`, `[provider]` | Raw provider-wrapped status object |
 | `get_adshield_stats(provider)` | `adshield.get_stats`, `[provider]` | Raw provider-wrapped statistics object |
 
-These contracts are source-backed and offline-tested, not hardware-verified.
+These contracts are source-backed and offline-tested. Providers/configuration
+have hardware observations; status/statistics remain unverified. See [compatibility](compatibility.md).
 The app uses provider identifiers `shiild` and `adguard`. A caller must supply
 nonempty provider text for status/statistics; identifiers are passed unchanged
 without a fixed capability allowlist. Those requests may contact an external
@@ -163,8 +166,8 @@ this batch pending verification of their external effects.
 | `get_vpn_client_config(client_id)` | `vpn.get_conf`, `["clients", client_id]` | Raw configuration object, not an unwrapped client |
 | `get_vpn_connection_page(vpn_type, page=1)` | `vpn.get_connection`, `[vpn_type, start, end]` | Raw object containing `connection_list` and optional `total_cnt` |
 
-These helpers are source-backed/offline-tested only; hardware support is not
-yet verified. Firmware-reported online interfaces are observations, not a new
+These helpers are source-backed and offline-tested; see [compatibility](compatibility.md)
+for hardware-tested argument forms. Firmware-reported online interfaces are observations, not a new
 reachability test. VPN configuration categories observed in the app include
 `clients`, `wireguards`, `ipsecs2s` and `zerotier`; support varies by firmware.
 Selectors must be nonempty strings and are sent unchanged, without assuming a
@@ -199,7 +202,8 @@ remain outside this passive-read batch pending further verification.
 | `get_multi_ssid_config(section)` | `multi_ssid.get_conf`, `["wireless", section]` | Raw section object or `None` |
 | `get_parental_control_config(group=None)` | `parental_control.get_conf`, `[]` or `[group]` | List of raw group objects, including when selecting one group; null becomes `[]` |
 
-These helpers are source-backed and offline-tested, not hardware-verified. They
+These helpers are source-backed and offline-tested; see [compatibility](compatibility.md)
+for successful hardware reads, RPC rejections and untested forms. They
 do not change VLANs, apply profiles, enroll mesh nodes, create SSIDs or change
 parental policies. `section` and any supplied `group` must be nonempty strings;
 invalid arguments fail before a request. Use an actual returned section name,
@@ -227,8 +231,8 @@ sections automatically.
 | `get_wifi_frequencies()` | `wifi.get_freqlist`, `[]` | Raw object keyed by firmware interface names |
 | `get_wifi_scan_results(interface=None)` | `wifi.get_aplist`, `[]` or `[interface]` | Raw AP-object list or `None` |
 
-These helpers are source-backed and offline-tested; hardware compatibility is
-not yet verified. All preserve unknown fields. Name records do not establish
+These helpers are source-backed and offline-tested, with model-specific hardware
+results recorded in [compatibility](compatibility.md). All preserve unknown fields. Name records do not establish
 physical identity across randomized MAC addresses. The traffic helper fetches
 exactly one page with inclusive bounds of 100 entries (page 2 is `[101, 200]`),
 not every client or historical usage. It preserves rates/counters verbatim and
@@ -251,7 +255,7 @@ scan or a different endpoint as fallback.
 ### Additional configuration reads
 
 All of these methods send an empty positional argument list (`[]`). They are
-source-backed and offline-tested, not yet hardware-verified.
+source-backed and offline-tested, with hardware results in [compatibility](compatibility.md).
 
 | Helper | RPC | Result |
 | --- | --- | --- |
@@ -260,11 +264,12 @@ source-backed and offline-tested, not yet hardware-verified.
 | `get_default_config()` | `conf.get_defaults` | Raw firmware defaults object; does not restore defaults |
 | `get_ddns_config()` | `conf.get_ddns` | Raw DDNS object, potentially including account credentials |
 | `get_connectivity_check_config()` | `conf.get_pingcheck` | Raw check settings object; does not initiate a check |
-| `get_auto_reboot_config()` | `conf.get_autoreboot` | Raw scheduling object; does not schedule or trigger reboot |
+| `get_auto_reboot_config()` | `conf.get_autoreboot` | Raw scheduling object or `None` for an empty-array response; never triggers reboot |
 | `get_qos_config()` | `conf.get_qos` | Firmware-defined JSON, including possible null |
 
-Object readers preserve empty objects and all nested/unknown fields; null and
-non-object responses raise `CudyAPIError`. QoS is intentionally unconstrained:
+Object readers preserve empty objects and all nested/unknown fields. Automatic-reboot
+settings additionally accept the observed empty array as `None` (unavailable,
+not necessarily disabled). Null and other non-object responses raise `CudyAPIError`. QoS is intentionally unconstrained:
 the app consumes a generic JSON value, not a confirmed fixed model. No helper
 coerces string flags, times, addresses or rates into guessed types or units.
 Do not log these results; DDNS and defaults can contain secrets. Unsupported

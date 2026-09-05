@@ -65,7 +65,7 @@ def test_absent_and_empty(reader, args, result, expected):
         ("get_legacy_devices", (), {}),
         ("get_legacy_devices", (), ["private"]),
         ("get_firmware_update_info", (), None),
-        ("get_firmware_update_info", (), []),
+        ("get_firmware_update_info", (), [1]),
         ("get_firmware_check_status", ("known",), {}),
         ("get_firmware_check_status", ("known",), 1),
         ("get_apply_status", (), False),

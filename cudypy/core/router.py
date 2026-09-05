@@ -507,12 +507,13 @@ class CudyRouter:
         """
         return self._read_list("devices.get_devlist")
 
-    def get_firmware_update_info(self) -> Dict[str, Any]:
+    def get_firmware_update_info(self) -> Optional[Dict[str, Any]]:
         """Read available firmware metadata; do not initiate an update check.
 
-        Metadata may be stale. Does not download or install firmware.
+        Metadata may be stale. An empty-array response becomes None (unavailable).
+        Does not download or install firmware.
         """
-        return self._read_object("system.upgrade_fwinfo")
+        return self._read_optional_firmware_object("system.upgrade_fwinfo")
 
     def get_firmware_check_status(self, device_id: str) -> Optional[str]:
         """Read an existing firmware-check state once for a known target ID.
@@ -740,6 +741,14 @@ class CudyRouter:
     def _read_config(self, sections: List[str]) -> Dict[str, Any]:
         return self._read_object("conf.get_all", sections)
 
+    def _read_optional_firmware_object(self, method: str) -> Optional[Dict[str, Any]]:
+        result = self.call_api(method)["result"]
+        if isinstance(result, list) and not result:
+            return None
+        if not isinstance(result, dict):
+            raise CudyAPIError("Expected an object or empty array from " + method)
+        return result
+
     def get_system_config(self) -> Dict[str, Any]:
         """Read system settings, not runtime system status; preserve raw fields."""
         return self._read_object("conf.get_system")
@@ -760,9 +769,12 @@ class CudyRouter:
         """Read configured connectivity-check targets; does not run a check."""
         return self._read_object("conf.get_pingcheck")
 
-    def get_auto_reboot_config(self) -> Dict[str, Any]:
-        """Read reboot scheduling settings without scheduling or causing a reboot."""
-        return self._read_object("conf.get_autoreboot")
+    def get_auto_reboot_config(self) -> Optional[Dict[str, Any]]:
+        """Read reboot settings; empty-array responses become None (unavailable).
+
+        Does not schedule or cause a reboot. None does not imply disabled.
+        """
+        return self._read_optional_firmware_object("conf.get_autoreboot")
 
     def get_qos_config(self) -> Any:
         """Read firmware-defined QoS JSON; preserve null and all result shapes."""

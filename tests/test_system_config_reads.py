@@ -29,7 +29,7 @@ def test_exact_payload_and_lossless_result(reader, method, result):
 
 
 @pytest.mark.parametrize("reader,method", READERS[:-1])
-@pytest.mark.parametrize("result", [None, [], "private-value", 0, False])
+@pytest.mark.parametrize("result", [None, [1], "private-value", 0, False])
 def test_object_contract_rejects_wrong_shapes_without_disclosing_values(reader, method, result):
     with CudyRouter("http://192.0.2.1", auth_token="synthetic-token") as router:
         with patch.object(router.session, "post") as post:

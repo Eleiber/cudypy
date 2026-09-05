@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Verify 38 passive-read helpers on WR3000H and WR3000 firmware. Handle observed
+  empty-array automatic-reboot and firmware-metadata responses as unavailable
+  objects (`None`); preserve firmware-specific RPC errors and document limits.
+
 - Add legacy raw clients and one-shot firmware metadata/check/apply status reads.
   Classify timezone assignment as a setter, not a missing read operation.
 

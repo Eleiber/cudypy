@@ -61,8 +61,8 @@ dedicated, tested helper.
 
 The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
 parental-control, VPN/network, ad-blocking, cellular and maintenance helpers have source-confirmed argument lists and
-offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
-for response types and sensitive-data handling. For older helpers, consult the
+offline tests. Selected helpers have now been checked on both router models.
+See [read contracts](feature-reads.md) for types and sensitive-data handling, and the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
 not empty configuration. Unsupported on one firmware does not mean universally
 unsupported.
