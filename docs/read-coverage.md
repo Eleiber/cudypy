@@ -39,8 +39,14 @@ dedicated, tested helper.
 | `devices.traffic_stat` | `get_client_traffic_page` |
 | `wifi.get_freqlist` | `get_wifi_frequencies` |
 | `wifi.get_aplist` | `get_wifi_scan_results` (existing results only) |
+| `iptv.get_conf` | `get_iptv_config` |
+| `easymesh.get_conf` | `get_easymesh_config` |
+| `multi_ssid.get_all_multi_ssid_iface` | `get_multi_ssid_interfaces` |
+| `multi_ssid.get_conf` | `get_multi_ssid_config` (one selected section) |
+| `parental_control.get_conf` | `get_parental_control_config` |
 
-The seven additional configuration helpers and four client/Wi-Fi helpers have source-confirmed argument lists and
+The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
+parental-control helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -59,11 +65,8 @@ contact external services, generate credentials or mark messages as read.
 | Client identity | `devices.mdns_browse` | Whether browsing performs active discovery; identity certainty remains unproven |
 | Legacy client list | `devices.get_devlist` | Result variants and value beyond the existing extended-list helper |
 | Network | `net.online_interfaces`, `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
-| Mesh | `easymesh.get_conf`, `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
-| IPTV | `iptv.get_conf` | Object fields and null variants |
+| Mesh | `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
 | VPN | `vpn.get_conf`, `vpn.get_connection`, `vpn.export_conf` | Protocol arguments and sensitive profile/key material; export side effects |
-| Multi-SSID | `multi_ssid.get_all_multi_ssid_iface`, `multi_ssid.get_conf` | Interface identifiers and section shapes |
-| Parental control | `parental_control.get_conf` | Group/device mappings and schedule structures |
 | Cellular | `cellular.getstatus`, `cellular.get_data`, `cellular.get_statistics` | Modem/interface arguments and counter units |
 | Messages | `cellular.list_sms`, `cellular.read_sms` | Pagination and read-state side effects; message privacy |
 | Ad blocking | `adshield.get_providers`, `adshield.get_conf`, `adshield.get_status`, `adshield.get_stats`, `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Provider-specific arguments, result variants and external calls |

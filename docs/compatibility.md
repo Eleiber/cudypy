@@ -23,6 +23,9 @@ Observed differences:
 
 ## Verification limits
 
+- IPTV, EasyMesh, multi-SSID and parental-control configuration helpers are
+  source-backed and offline-tested; hardware availability remains unverified.
+
 - Client-name records, paged client traffic, Wi-Fi frequencies and existing AP
   result reads are source-backed/offline-tested only, not hardware-verified.
 

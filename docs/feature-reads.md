@@ -66,6 +66,35 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### IPTV, EasyMesh, multi-SSID and parental controls
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_iptv_config()` | `iptv.get_conf`, `[]` | Raw object containing settings and available profiles |
+| `get_easymesh_config()` | `easymesh.get_conf`, `[]` | Raw EasyMesh settings object, not topology |
+| `get_multi_ssid_interfaces()` | `multi_ssid.get_all_multi_ssid_iface`, `[]` | List of section-name strings; null becomes `[]` |
+| `get_multi_ssid_config(section)` | `multi_ssid.get_conf`, `["wireless", section]` | Raw section object or `None` |
+| `get_parental_control_config(group=None)` | `parental_control.get_conf`, `[]` or `[group]` | List of raw group objects, including when selecting one group; null becomes `[]` |
+
+These helpers are source-backed and offline-tested, not hardware-verified. They
+do not change VLANs, apply profiles, enroll mesh nodes, create SSIDs or change
+parental policies. `section` and any supplied `group` must be nonempty strings;
+invalid arguments fail before a request. Use an actual returned section name,
+not a guessed radio identifier. Only the selected-section form of the multi-SSID
+configuration RPC is wrapped.
+
+IPTV and EasyMesh results must be objects; null is rejected rather than treated
+as disabled. A null selected SSID remains absent/unknown; it does not prove the
+radio is disabled. Wrong result types raise `CudyAPIError`, and unsupported RPCs
+remain `CudyUnsupportedError`. Nested values, string flags, schedule fields and
+unknown firmware fields remain unchanged; no default policy is invented.
+
+SSID configuration may contain Wi-Fi keys and RADIUS credentials. Parental
+groups may contain private device lists, website rules and schedules. Do not log
+raw results. The contributor verifier includes unfiltered configuration reads
+only with `--include-config`; it does not enumerate and fetch individual SSID
+sections automatically.
+
 ### Client names, traffic and Wi-Fi information
 
 | Helper | RPC / positional arguments | Result |

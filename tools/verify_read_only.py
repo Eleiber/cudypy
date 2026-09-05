@@ -73,6 +73,10 @@ def main():
                     connectivity_check_config=router.get_connectivity_check_config,
                     auto_reboot_config=router.get_auto_reboot_config,
                     qos_config=router.get_qos_config,
+                    iptv_config=router.get_iptv_config,
+                    easymesh_config=router.get_easymesh_config,
+                    multi_ssid_interfaces=router.get_multi_ssid_interfaces,
+                    parental_control_config=router.get_parental_control_config,
                 )
             if args.client_mac:
                 reads.update(

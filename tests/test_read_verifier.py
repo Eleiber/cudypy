@@ -57,6 +57,9 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
     verifier.get_auto_reboot_config.assert_called_once_with()
     verifier.get_client_traffic_page.assert_called_once_with()
     verifier.get_wifi_scan_results.assert_called_once_with()
+    verifier.get_parental_control_config.assert_called_once_with()
+    verifier.get_multi_ssid_interfaces.assert_called_once_with()
+    verifier.get_multi_ssid_config.assert_not_called()
 
 
 def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
@@ -66,6 +69,10 @@ def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
     assert verify_read_only.main() == 0
     verifier.get_ddns_config.assert_not_called()
     verifier.get_default_config.assert_not_called()
+    verifier.get_iptv_config.assert_not_called()
+    verifier.get_easymesh_config.assert_not_called()
+    verifier.get_parental_control_config.assert_not_called()
+    verifier.get_multi_ssid_interfaces.assert_not_called()
     verifier.get_auto_reboot_config.assert_not_called()
 
 

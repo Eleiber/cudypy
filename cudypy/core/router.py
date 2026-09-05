@@ -387,6 +387,11 @@ class CudyRouter:
             "devices.traffic_stat",
             "wifi.get_freqlist",
             "wifi.get_aplist",
+            "iptv.get_conf",
+            "easymesh.get_conf",
+            "multi_ssid.get_all_multi_ssid_iface",
+            "multi_ssid.get_conf",
+            "parental_control.get_conf",
         }
     )
 
@@ -667,6 +672,46 @@ class CudyRouter:
     def get_qos_config(self) -> Any:
         """Read firmware-defined QoS JSON; preserve null and all result shapes."""
         return self.call_api("conf.get_qos")["result"]
+
+    def get_iptv_config(self) -> Dict[str, Any]:
+        """Read IPTV settings and available profiles without applying a profile."""
+        return self._read_object("iptv.get_conf")
+
+    def get_easymesh_config(self) -> Dict[str, Any]:
+        """Read EasyMesh settings, not topology; never initiate enrollment."""
+        return self._read_object("easymesh.get_conf")
+
+    def get_multi_ssid_interfaces(self) -> List[str]:
+        """Read firmware multi-SSID section identifiers; null means no entries."""
+        result = self.call_api("multi_ssid.get_all_multi_ssid_iface")["result"]
+        if result is None:
+            return []
+        if not isinstance(result, list) or not all(isinstance(item, str) for item in result):
+            raise CudyAPIError("Multi-SSID interfaces must be an array of strings")
+        return result
+
+    def get_multi_ssid_config(self, section: str) -> Optional[Dict[str, Any]]:
+        """Read one known multi-SSID section; null remains absent/unknown.
+
+        May contain Wi-Fi or RADIUS credentials. Do not log the raw result.
+        This does not add, remove or enable an SSID.
+        """
+        if not isinstance(section, str) or not section.strip():
+            raise ValueError("section must be a nonempty string")
+        result = self.call_api("multi_ssid.get_conf", ["wireless", section])["result"]
+        if result is not None and not isinstance(result, dict):
+            raise CudyAPIError("Multi-SSID configuration must be an object or null")
+        return result
+
+    def get_parental_control_config(self, group: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Read raw parental groups, optionally selecting one by its name.
+
+        Even a selected group returns a list. Null means no records. Device
+        lists and schedules are private; no policy or schedule is changed.
+        """
+        if group is not None and (not isinstance(group, str) or not group.strip()):
+            raise ValueError("group must be a nonempty string")
+        return self._read_list("parental_control.get_conf", [] if group is None else [group])
 
     def get_lan_config(self) -> LanConfig:
         """Read configured LAN fields; this is not live interface status."""

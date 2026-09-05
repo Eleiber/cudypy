@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add IPTV, EasyMesh, multi-SSID section discovery/configuration and parental
+  group configuration readers with explicit shape checks and raw-field retention.
+
 - Add raw client-name records, paged client traffic, Wi-Fi frequency information
   and existing AP-result reads, preserving unavailable scan results separately
   from empty lists. No scan initiation or automatic polling is performed.
