@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cudy Router Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="16" cy="16" r="6" fill="currentColor"/>
+                    <path d="M16 4v4M16 24v4M4 16h4M24 16h4" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>Cudy Dashboard</span>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="devices">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    Devices
+                </a>
+                <a href="#" class="nav-item" data-view="network">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="2"/>
+                        <path d="M16.24 7.76a6 6 0 010 8.49m-8.48-.01a6 6 0 010-8.49m11.31-2.82a10 10 0 010 14.14m-14.14 0a10 10 0 010-14.14"/>
+                    </svg>
+                    Network
+                </a>
+                <a href="#" class="nav-item" data-view="system">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    System
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="refreshBtn" class="refresh-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                    Refresh
+                </button>
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <h1 id="pageTitle">Devices</h1>
+                <div class="header-actions">
+                    <select id="filterSelect" class="filter-select">
+                        <option value="all">All Devices</option>
+                        <option value="online">Recently Active (Heuristic)</option>
+                        <option value="wifi">WiFi</option>
+                        <option value="ethernet">Ethernet</option>
+                    </select>
+                    <button id="settingsBtn" class="icon-btn" title="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="21" x2="4" y2="14"/>
+                            <line x1="4" y1="10" x2="4" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12" y2="3"/>
+                            <line x1="20" y1="21" x2="20" y2="16"/>
+                            <line x1="20" y1="12" x2="20" y2="3"/>
+                            <line x1="1" y1="14" x2="7" y2="14"/>
+                            <line x1="9" y1="8" x2="15" y2="8"/>
+                            <line x1="17" y1="16" x2="23" y2="16"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-icon devices-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Devices</span>
+                        <span class="stat-value" id="totalDevices">-</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon online-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Recently Active</span>
+                        <span class="stat-value" id="onlineDevices">-</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon wifi-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12.55a11 11 0 0114.08 0"/>
+                            <path d="M1.42 9a16 16 0 0121.16 0"/>
+                            <path d="M8.53 16.11a6 6 0 016.95 0"/>
+                            <line x1="12" y1="20" x2="12.01" y2="20"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">WiFi</span>
+                        <span class="stat-value" id="wifiDevices">-</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon ethernet-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Ethernet</span>
+                        <span class="stat-value" id="ethernetDevices">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Views -->
+            <section class="monitor-panel" aria-labelledby="monitorTitle">
+                <div class="monitor-heading">
+                    <div><h2 id="monitorTitle">Traffic over time</h2>
+                    <p>Reported client rates · not WAN throughput · this tab only</p></div>
+                    <div class="monitor-controls">
+                        <label>Graph <select id="historyClient"><option value="">All clients</option></select></label>
+                        <button id="pausePolling" type="button" aria-pressed="false">Pause</button>
+                        <button id="clearHistory" type="button">Clear history</button>
+                    </div>
+                </div>
+                <div class="graph-legend"><span class="download-key">● Download</span>
+                    <span class="upload-key">● Upload</span><span id="historySummary">Waiting for samples</span></div>
+                <svg id="trafficGraph" viewBox="0 0 800 210" role="img" aria-label="Client upload and download rate history"></svg>
+                <p id="sampleStatus" role="status">Samples every 10 seconds while this tab is visible. Up to 180 samples.</p>
+                <p class="monitor-note">Missing values and failed polls create gaps, not zero traffic. Activity cards use a heuristic, not a connectivity test.</p>
+            </section>
+            <div class="content-area">
+                <!-- Devices View -->
+                <div class="view active" id="devicesView">
+                    <div class="device-tools">
+                        <label>Find a client <input id="clientSearch" type="search" placeholder="Name, IP or MAC"></label>
+                        <label>Sort <select id="clientSort"><option value="name">Name</option>
+                        <option value="down">Download rate</option><option value="up">Upload rate</option>
+                        <option value="signal">Signal strength</option></select></label>
+                    </div>
+                    <div class="devices-grid" id="devicesGrid">
+                        <!-- Devices will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Network View -->
+                <div class="view" id="networkView">
+                    <div class="network-info" id="networkInfo">
+                        <div class="loading">Loading network info...</div>
+                    </div>
+                </div>
+
+                <!-- System View -->
+                <div class="view" id="systemView">
+                    <div class="system-info" id="systemInfo">
+                        <div class="loading">Loading system info...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettings">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="routerUrl">Router URL</label>
+                    <input type="text" id="routerUrl" placeholder="Router URL">
+                </div>
+                <div class="form-group">
+                    <label for="routerPassword">Router Password</label>
+                    <input type="password" id="routerPassword" placeholder="Enter router password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelSettings">Cancel</button>
+                <button class="btn btn-primary" id="saveSettings">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/history.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
