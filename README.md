@@ -1,7 +1,7 @@
 # CudyPy
 
-CudyPy is an unofficial, synchronous Python wrapper for Cudy's local LuCI app RPC
-API. Read methods have been checked on WR3000H V1.0 and WR3000 V2.0.
+CudyPy is an unofficial, experimental synchronous Python wrapper for Cudy's local
+LuCI app RPC API. Read methods have been checked on WR3000H V1.0 and WR3000 V2.0.
 See [tested firmware and results](docs/compatibility.md); model names
 alone do not guarantee firmware capabilities.
 

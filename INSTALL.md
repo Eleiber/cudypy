@@ -9,7 +9,7 @@ python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-On Windows, activate with `.venv\\Scripts\\activate`.
+On Windows, activate with `.venv\Scripts\activate`.
 Runtime dependencies are declared in `pyproject.toml`; the requirements files
 delegate to that metadata. No router credentials are needed for unit tests.
 
