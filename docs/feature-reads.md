@@ -66,6 +66,41 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### VPN profiles and online interfaces
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_online_interfaces()` | `net.online_interfaces`, `[]` | Raw interface-name strings; null becomes `[]` |
+| `get_vpn_profiles(category="clients")` | `vpn.get_conf`, `[category]` | Raw configuration object, retaining its outer fields |
+| `get_vpn_client_config(client_id)` | `vpn.get_conf`, `["clients", client_id]` | Raw configuration object, not an unwrapped client |
+| `get_vpn_connection_page(vpn_type, page=1)` | `vpn.get_connection`, `[vpn_type, start, end]` | Raw object containing `connection_list` and optional `total_cnt` |
+
+These helpers are source-backed/offline-tested only; hardware support is not
+yet verified. Firmware-reported online interfaces are observations, not a new
+reachability test. VPN configuration categories observed in the app include
+`clients`, `wireguards`, `ipsecs2s` and `zerotier`; support varies by firmware.
+Selectors must be nonempty strings and are sent unchanged, without assuming a
+fixed firmware capability list. The selected-client helper requires a known ID.
+
+The existing `get_vpn_config()` reads general settings through `conf.get_all`;
+it is not replaced by the profile readers. Profile objects may contain private
+keys, passwords and certificates. Never log their raw contents. The verifier
+only requests the default profile category when `--include-config` is supplied;
+it does not guess client IDs or VPN types for further reads.
+
+Connection pages contain at most 100 requested entries using inclusive bounds
+(page 2 sends `[vpn_type, 101, 200]`). One page is not the complete connection
+list or historical traffic. `connection_list` must be an array of objects;
+non-null `total_cnt` must be a nonnegative integer. Missing counts remain
+missing. Handshake values and unknown fields remain raw; no timestamp units,
+reachability or freshness are inferred. Pages may change between requests.
+Profile results must be objects; null is not converted to empty configuration.
+Wrong shapes raise `CudyAPIError`; unsupported methods remain explicit errors.
+
+These helpers do not export profiles, generate keys, connect/disconnect tunnels
+or run `net.online_check`. Public-IP lookup and active-check/export behavior
+remain outside this passive-read batch pending further verification.
+
 ### IPTV, EasyMesh, multi-SSID and parental controls
 
 | Helper | RPC / positional arguments | Result |

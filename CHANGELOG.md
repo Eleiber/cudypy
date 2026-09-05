@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add online-interface names, VPN category/selected-client configuration and
+  paged VPN connections. Preserve raw response wrappers and sensitive fields;
+  keep profile reads opt-in in the compatibility checker.
+
 - Add IPTV, EasyMesh, multi-SSID section discovery/configuration and parental
   group configuration readers with explicit shape checks and raw-field retention.
 

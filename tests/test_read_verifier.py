@@ -19,6 +19,7 @@ def verifier(monkeypatch, tmp_path):
     router.get_devices.return_value = []
     router.get_wireless_config.return_value = {"private-section": {"key": "synthetic-secret"}}
     router.get_ddns_config.return_value = {"password": "synthetic-ddns-secret"}
+    router.get_vpn_profiles.return_value = {"clients": [{"key": "synthetic-vpn-secret"}]}
     monkeypatch.setattr(verify_read_only, "CudyRouter", MagicMock(return_value=router))
     monkeypatch.setattr(
         "sys.argv",
@@ -47,6 +48,7 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
             "private-section",
             "synthetic-token",
             "synthetic-ddns-secret",
+            "synthetic-vpn-secret",
         ]
     )
     methods = [call[0] for call in verifier.method_calls]
@@ -60,6 +62,10 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
     verifier.get_parental_control_config.assert_called_once_with()
     verifier.get_multi_ssid_interfaces.assert_called_once_with()
     verifier.get_multi_ssid_config.assert_not_called()
+    verifier.get_vpn_profiles.assert_called_once_with()
+    verifier.get_online_interfaces.assert_called_once_with()
+    verifier.get_vpn_client_config.assert_not_called()
+    verifier.get_vpn_connection_page.assert_not_called()
 
 
 def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
@@ -69,6 +75,7 @@ def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):
     assert verify_read_only.main() == 0
     verifier.get_ddns_config.assert_not_called()
     verifier.get_default_config.assert_not_called()
+    verifier.get_vpn_profiles.assert_not_called()
     verifier.get_iptv_config.assert_not_called()
     verifier.get_easymesh_config.assert_not_called()
     verifier.get_parental_control_config.assert_not_called()

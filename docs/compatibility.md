@@ -23,6 +23,9 @@ Observed differences:
 
 ## Verification limits
 
+- Online interface names, VPN profile reads and VPN connection pages are
+  source-backed/offline-tested only; hardware availability remains unverified.
+
 - IPTV, EasyMesh, multi-SSID and parental-control configuration helpers are
   source-backed and offline-tested; hardware availability remains unverified.
 

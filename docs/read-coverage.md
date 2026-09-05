@@ -44,9 +44,12 @@ dedicated, tested helper.
 | `multi_ssid.get_all_multi_ssid_iface` | `get_multi_ssid_interfaces` |
 | `multi_ssid.get_conf` | `get_multi_ssid_config` (one selected section) |
 | `parental_control.get_conf` | `get_parental_control_config` |
+| `net.online_interfaces` | `get_online_interfaces` |
+| `vpn.get_conf` | `get_vpn_profiles`, `get_vpn_client_config` (selected argument forms) |
+| `vpn.get_connection` | `get_vpn_connection_page` |
 
 The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
-parental-control helpers have source-confirmed argument lists and
+parental-control and VPN/network helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -64,17 +67,19 @@ contact external services, generate credentials or mark messages as read.
 | --- | --- | --- |
 | Client identity | `devices.mdns_browse` | Whether browsing performs active discovery; identity certainty remains unproven |
 | Legacy client list | `devices.get_devlist` | Result variants and value beyond the existing extended-list helper |
-| Network | `net.online_interfaces`, `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
+| Network | `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
 | Mesh | `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
-| VPN | `vpn.get_conf`, `vpn.get_connection`, `vpn.export_conf` | Protocol arguments and sensitive profile/key material; export side effects |
+| VPN | `vpn.export_conf` | Sensitive profile/key material; export side effects |
 | Cellular | `cellular.getstatus`, `cellular.get_data`, `cellular.get_statistics` | Modem/interface arguments and counter units |
 | Messages | `cellular.list_sms`, `cellular.read_sms` | Pagination and read-state side effects; message privacy |
 | Ad blocking | `adshield.get_providers`, `adshield.get_conf`, `adshield.get_status`, `adshield.get_stats`, `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Provider-specific arguments, result variants and external calls |
 | Maintenance/status | `sysinfo`, `system.zonename`, `system.upgrade_fwinfo`, `system.upgrade_checkstatus`, `apply_status` | Authentication context, arguments and whether a call reads or changes state |
 | Provider integration | `vpn.surfshark_server` | External requests and arguments; not assumed passive |
 
-`vpn.get_conf` is a distinct RPC from the existing `get_vpn_config()` helper,
-which reads selected sections through `conf.get_all`.
+`get_vpn_profiles()` uses `vpn.get_conf`, distinct from `get_vpn_config()`,
+which reads general settings through `conf.get_all`. Only category selection
+and the `clients` plus identifier form are wrapped; other argument forms need
+separate verification.
 
 `combo.call` needs separate treatment: a batch can contain mutations, so it must
 not be added wholesale to the read-retry allowlist. Login/token exchanges,

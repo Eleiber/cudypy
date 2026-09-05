@@ -392,6 +392,9 @@ class CudyRouter:
             "multi_ssid.get_all_multi_ssid_iface",
             "multi_ssid.get_conf",
             "parental_control.get_conf",
+            "net.online_interfaces",
+            "vpn.get_conf",
+            "vpn.get_connection",
         }
     )
 
@@ -588,6 +591,55 @@ class CudyRouter:
     def get_vpn_status(self) -> Any:
         """Read firmware-specific VPN status; older firmware may reject the method."""
         return self.call_api("vpn.get_status")["result"]
+
+    def get_online_interfaces(self) -> List[str]:
+        """Read firmware-reported online interface names, without a reachability test."""
+        result = self.call_api("net.online_interfaces")["result"]
+        if result is None:
+            return []
+        if not isinstance(result, list) or not all(isinstance(item, str) for item in result):
+            raise CudyAPIError("Online interfaces must be an array of strings")
+        return result
+
+    def get_vpn_profiles(self, category: str = "clients") -> Dict[str, Any]:
+        """Read a VPN configuration category, preserving its outer object.
+
+        Distinct from get_vpn_config(), which reads general VPN settings.
+        May contain private keys and credentials; do not log the result.
+        """
+        if not isinstance(category, str) or not category.strip():
+            raise ValueError("category must be a nonempty string")
+        return self._read_object("vpn.get_conf", [category])
+
+    def get_vpn_client_config(self, client_id: str) -> Dict[str, Any]:
+        """Read a known VPN client profile; retain the firmware response wrapper.
+
+        May contain private keys and credentials. Does not enable the client.
+        """
+        if not isinstance(client_id, str) or not client_id.strip():
+            raise ValueError("client_id must be a nonempty string")
+        return self._read_object("vpn.get_conf", ["clients", client_id])
+
+    def get_vpn_connection_page(self, vpn_type: str, page: int = 1) -> Dict[str, Any]:
+        """Read one connection page of up to 100 entries; not historical usage.
+
+        Preserve native handshake values and count metadata. Does not connect,
+        disconnect, export profiles or generate keys. Pages are not atomic.
+        """
+        if not isinstance(vpn_type, str) or not vpn_type.strip():
+            raise ValueError("vpn_type must be a nonempty string")
+        if type(page) is not int or page < 1:
+            raise ValueError("page must be a positive integer")
+        result = self._read_object(
+            "vpn.get_connection", [vpn_type, (page - 1) * 100 + 1, page * 100]
+        )
+        entries = result.get("connection_list")
+        if not isinstance(entries, list) or not all(isinstance(item, dict) for item in entries):
+            raise CudyAPIError("VPN connection page must contain a connection_list array")
+        count = result.get("total_cnt")
+        if count is not None and (type(count) is not int or count < 0):
+            raise CudyAPIError("VPN connection count must be a nonnegative integer")
+        return result
 
     def get_vpn_config(self) -> Dict[str, Any]:
         """Read VPN enabled/policy/protocol configuration; may contain private fields.
