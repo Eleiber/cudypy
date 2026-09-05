@@ -1,9 +1,8 @@
 # CudyPy
 
 CudyPy is an unofficial, experimental synchronous Python wrapper for Cudy's local
-LuCI app RPC API. Read methods have been checked on WR3000H V1.0 and WR3000 V2.0.
-See [tested firmware and results](docs/compatibility.md); model names
-alone do not guarantee firmware capabilities.
+LuCI app RPC API. See [compatibility and verification coverage](docs/compatibility.md)
+for tested models, firmware and verification limits.
 
 The package is named `cudypy`.
 Install from this source tree, not an assumed PyPI release.
@@ -53,11 +52,6 @@ Closing a client only closes local resources; it does not log out the browser
 or change router configuration.
 
 ## Password authentication
-
-Successful login and incorrect-password rejection were checked on WR3000H V1.0
-using an explicit salt and an alternate HTTP adapter. See the
-[authentication verification scope](docs/compatibility.md#password-authentication-and-concurrent-sessions)
-for discovery, transport and concurrent-session limits.
 
 ```python
 import os
