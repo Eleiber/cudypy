@@ -23,6 +23,10 @@ Observed differences:
 
 ## Verification limits
 
+- Ad-blocking provider/configuration/status/statistics helpers are source-backed
+  and offline-tested only. Provider-service behavior and hardware support remain
+  unverified; status/statistics are not automatically replayed or probed.
+
 - Online interface names, VPN profile reads and VPN connection pages are
   source-backed/offline-tested only; hardware availability remains unverified.
 

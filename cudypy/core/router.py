@@ -395,6 +395,8 @@ class CudyRouter:
             "net.online_interfaces",
             "vpn.get_conf",
             "vpn.get_connection",
+            "adshield.get_providers",
+            "adshield.get_conf",
         }
     )
 
@@ -728,6 +730,39 @@ class CudyRouter:
     def get_iptv_config(self) -> Dict[str, Any]:
         """Read IPTV settings and available profiles without applying a profile."""
         return self._read_object("iptv.get_conf")
+
+    def get_adshield_providers(self) -> Dict[str, Any]:
+        """Read the raw provider-catalog object, retaining its providers field."""
+        return self._read_object("adshield.get_providers")
+
+    def get_adshield_config(self) -> Dict[str, Any]:
+        """Read ad-blocking settings; may contain account credentials. Do not log."""
+        return self._read_object("adshield.get_conf")
+
+    def _read_adshield_provider(self, method: str, provider: str) -> Dict[str, Any]:
+        if not isinstance(provider, str) or not provider.strip():
+            raise ValueError("provider must be a nonempty string")
+        # Provider services may be contacted; never automatically replay these reads.
+        result = self.call_api(method, [provider], retry_auth=False)["result"]
+        if not isinstance(result, dict):
+            raise CudyAPIError("Expected an object from " + method)
+        return result
+
+    def get_adshield_status(self, provider: str) -> Dict[str, Any]:
+        """Read provider status once, retaining nested provider error codes.
+
+        May contact an external provider through the router. No automatic auth
+        replay, OAuth initialization or configuration changes are performed.
+        """
+        return self._read_adshield_provider("adshield.get_status", provider)
+
+    def get_adshield_stats(self, provider: str) -> Dict[str, Any]:
+        """Read raw provider statistics once; do not infer periods or reset counts.
+
+        May contact an external provider through the router. Sensitive account
+        and DNS-usage data remain raw. Do not log the result.
+        """
+        return self._read_adshield_provider("adshield.get_stats", provider)
 
     def get_easymesh_config(self) -> Dict[str, Any]:
         """Read EasyMesh settings, not topology; never initiate enrollment."""

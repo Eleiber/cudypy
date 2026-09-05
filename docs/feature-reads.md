@@ -66,6 +66,37 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Ad-blocking providers, settings and statistics
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_adshield_providers()` | `adshield.get_providers`, `[]` | Raw object containing the provider list, not a bare array |
+| `get_adshield_config()` | `adshield.get_conf`, `[]` | Raw configuration object |
+| `get_adshield_status(provider)` | `adshield.get_status`, `[provider]` | Raw provider-wrapped status object |
+| `get_adshield_stats(provider)` | `adshield.get_stats`, `[provider]` | Raw provider-wrapped statistics object |
+
+These contracts are source-backed and offline-tested, not hardware-verified.
+The app uses provider identifiers `shiild` and `adguard`. A caller must supply
+nonempty provider text for status/statistics; identifiers are passed unchanged
+without a fixed capability allowlist. Those requests may contact an external
+provider through the router. They are made once, without automatic replay after
+authentication rejection, and are not included in the compatibility checker.
+The checker reads only providers/configuration with `--include-config`.
+
+All four results must be objects: empty objects are preserved, while null and
+non-object responses raise `CudyAPIError`. Nested fields remain raw, including
+unknown fields, provider-specific wrappers and provider error codes. A successful
+RPC response can still contain a provider failure (for example an `adguard.code`
+value); callers must inspect that provider result rather than assume success.
+RPC-level unsupported errors remain `CudyUnsupportedError`.
+
+Configuration/status may contain account information or credentials, and
+statistics can reveal DNS usage. Do not log raw results. No counters are reset,
+no aggregation period or unit is inferred, and no OAuth flow, account binding,
+provider selection or dashboard session is initiated by these helpers.
+Dashboard URLs, server selection and provider-device operations remain outside
+this batch pending verification of their external effects.
+
 ### VPN profiles and online interfaces
 
 | Helper | RPC / positional arguments | Result |

@@ -47,9 +47,13 @@ dedicated, tested helper.
 | `net.online_interfaces` | `get_online_interfaces` |
 | `vpn.get_conf` | `get_vpn_profiles`, `get_vpn_client_config` (selected argument forms) |
 | `vpn.get_connection` | `get_vpn_connection_page` |
+| `adshield.get_providers` | `get_adshield_providers` |
+| `adshield.get_conf` | `get_adshield_config` |
+| `adshield.get_status` | `get_adshield_status` (explicit provider, no auth replay) |
+| `adshield.get_stats` | `get_adshield_stats` (explicit provider, no auth replay) |
 
 The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
-parental-control and VPN/network helpers have source-confirmed argument lists and
+parental-control, VPN/network and ad-blocking helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -72,7 +76,7 @@ contact external services, generate credentials or mark messages as read.
 | VPN | `vpn.export_conf` | Sensitive profile/key material; export side effects |
 | Cellular | `cellular.getstatus`, `cellular.get_data`, `cellular.get_statistics` | Modem/interface arguments and counter units |
 | Messages | `cellular.list_sms`, `cellular.read_sms` | Pagination and read-state side effects; message privacy |
-| Ad blocking | `adshield.get_providers`, `adshield.get_conf`, `adshield.get_status`, `adshield.get_stats`, `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Provider-specific arguments, result variants and external calls |
+| Ad blocking | `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Dashboard access URL/session behavior and provider-account calls; external effects remain unverified |
 | Maintenance/status | `sysinfo`, `system.zonename`, `system.upgrade_fwinfo`, `system.upgrade_checkstatus`, `apply_status` | Authentication context, arguments and whether a call reads or changes state |
 | Provider integration | `vpn.surfshark_server` | External requests and arguments; not assumed passive |
 

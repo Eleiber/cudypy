@@ -79,6 +79,8 @@ def main():
                     easymesh_config=router.get_easymesh_config,
                     multi_ssid_interfaces=router.get_multi_ssid_interfaces,
                     parental_control_config=router.get_parental_control_config,
+                    adshield_providers=router.get_adshield_providers,
+                    adshield_config=router.get_adshield_config,
                 )
             if args.client_mac:
                 reads.update(

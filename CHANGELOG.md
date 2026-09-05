@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add ad-blocking provider/configuration reads and explicit-provider status and
+  statistics reads. Preserve provider wrappers/error codes; disable automatic
+  auth replay for potentially external provider requests.
+
 - Add online-interface names, VPN category/selected-client configuration and
   paged VPN connections. Preserve raw response wrappers and sensitive fields;
   keep profile reads opt-in in the compatibility checker.
