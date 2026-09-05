@@ -34,6 +34,9 @@ def main():
         "--client-mac", help="Optional known client for detail/limit/schedule reads"
     )
     parser.add_argument("--mesh-node", help="Optional known mesh node for its first client page")
+    parser.add_argument(
+        "--cellular-interface", help="Optional known cellular interface for status/statistics"
+    )
     args = parser.parse_args()
     try:
         token = args.token_file.read_text(encoding="utf-8").strip()
@@ -90,6 +93,17 @@ def main():
                 )
             if args.mesh_node:
                 reads["mesh_page"] = lambda: router.get_mesh_device_page(args.mesh_node)
+            if args.cellular_interface is not None:
+                reads.update(
+                    cellular_status=lambda: router.get_cellular_status(args.cellular_interface),
+                    cellular_statistics=lambda: router.get_cellular_statistics(
+                        args.cellular_interface
+                    ),
+                )
+                if args.include_config:
+                    reads["cellular_data_config"] = lambda: router.get_cellular_data_config(
+                        args.cellular_interface
+                    )
             for name, read in reads.items():
                 try:
                     report[name] = {"ok": True, **shape(read())}

@@ -72,6 +72,25 @@ def test_verifier_reports_shapes_without_values(verifier, capsys):
     verifier.get_adshield_providers.assert_called_once_with()
     verifier.get_adshield_status.assert_not_called()
     verifier.get_adshield_stats.assert_not_called()
+    verifier.get_cellular_status.assert_not_called()
+    verifier.get_cellular_statistics.assert_not_called()
+    verifier.get_cellular_data_config.assert_not_called()
+
+
+@pytest.mark.parametrize("include_config", [True, False])
+def test_cellular_requires_explicit_target(verifier, monkeypatch, capsys, include_config):
+    import sys
+
+    args = list(sys.argv) + ["--cellular-interface", "synthetic-modem"]
+    if not include_config:
+        args.remove("--include-config")
+    monkeypatch.setattr(sys, "argv", args)
+    verifier.get_cellular_status.return_value = {"imsi": "synthetic-sim-secret"}
+    assert verify_read_only.main() == 0
+    assert "synthetic-sim-secret" not in capsys.readouterr().out
+    verifier.get_cellular_status.assert_called_once_with("synthetic-modem")
+    verifier.get_cellular_statistics.assert_called_once_with("synthetic-modem")
+    assert verifier.get_cellular_data_config.call_count == int(include_config)
 
 
 def test_configuration_reads_are_opt_in(verifier, monkeypatch, capsys):

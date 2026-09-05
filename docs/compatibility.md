@@ -23,6 +23,10 @@ Observed differences:
 
 ## Verification limits
 
+- Cellular status, data-plan settings and statistics are source-backed and
+  offline-tested only. No cellular-capable model has been verified for these
+  helpers; the listed router models do not establish modem support.
+
 - Ad-blocking provider/configuration/status/statistics helpers are source-backed
   and offline-tested only. Provider-service behavior and hardware support remain
   unverified; status/statistics are not automatically replayed or probed.

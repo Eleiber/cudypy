@@ -26,6 +26,8 @@ python -m tools.verify_read_only --url "$CUDY_ROUTER_URL" --token-file "$CUDY_TO
 The tool performs named status reads and reports structural types. Optional
 `--include-config`, `--client-mac` and `--mesh-node` add explicitly selected
 reads. Configuration can contain credentials even if the report omits them.
+Use `--cellular-interface` with a known interface for cellular status/statistics;
+cellular data-plan settings also require `--include-config`. No interface is guessed.
 The tool never sends mutations, scans or password-login requests. Optional
 unsupported reads are reported separately; successful exit requires the core
 system and device reads, not success for every optional method.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add cellular status, data-plan settings and native statistics reads with
+  explicit interface selection and opt-in, shape-only compatibility checks.
+
 - Add ad-blocking provider/configuration reads and explicit-provider status and
   statistics reads. Preserve provider wrappers/error codes; disable automatic
   auth replay for potentially external provider requests.

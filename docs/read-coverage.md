@@ -51,9 +51,12 @@ dedicated, tested helper.
 | `adshield.get_conf` | `get_adshield_config` |
 | `adshield.get_status` | `get_adshield_status` (explicit provider, no auth replay) |
 | `adshield.get_stats` | `get_adshield_stats` (explicit provider, no auth replay) |
+| `cellular.getstatus` | `get_cellular_status` |
+| `cellular.get_data` | `get_cellular_data_config` |
+| `cellular.get_statistics` | `get_cellular_statistics` |
 
 The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
-parental-control, VPN/network and ad-blocking helpers have source-confirmed argument lists and
+parental-control, VPN/network, ad-blocking and cellular helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -74,7 +77,6 @@ contact external services, generate credentials or mark messages as read.
 | Network | `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
 | Mesh | `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
 | VPN | `vpn.export_conf` | Sensitive profile/key material; export side effects |
-| Cellular | `cellular.getstatus`, `cellular.get_data`, `cellular.get_statistics` | Modem/interface arguments and counter units |
 | Messages | `cellular.list_sms`, `cellular.read_sms` | Pagination and read-state side effects; message privacy |
 | Ad blocking | `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Dashboard access URL/session behavior and provider-account calls; external effects remain unverified |
 | Maintenance/status | `sysinfo`, `system.zonename`, `system.upgrade_fwinfo`, `system.upgrade_checkstatus`, `apply_status` | Authentication context, arguments and whether a call reads or changes state |

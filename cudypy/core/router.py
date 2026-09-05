@@ -397,6 +397,9 @@ class CudyRouter:
             "vpn.get_connection",
             "adshield.get_providers",
             "adshield.get_conf",
+            "cellular.getstatus",
+            "cellular.get_data",
+            "cellular.get_statistics",
         }
     )
 
@@ -730,6 +733,33 @@ class CudyRouter:
     def get_iptv_config(self) -> Dict[str, Any]:
         """Read IPTV settings and available profiles without applying a profile."""
         return self._read_object("iptv.get_conf")
+
+    @staticmethod
+    def _cellular_interface(interface: str) -> List[str]:
+        if not isinstance(interface, str) or not interface.strip():
+            raise ValueError("interface must be a nonempty string")
+        return [interface]
+
+    def get_cellular_status(self, interface: str) -> Dict[str, Any]:
+        """Read raw modem status for a known interface; may contain SIM identifiers.
+
+        Does not enable the modem, select a SIM or initiate a connection.
+        """
+        return self._read_object("cellular.getstatus", self._cellular_interface(interface))
+
+    def get_cellular_data_config(self, interface: str) -> List[Dict[str, Any]]:
+        """Read raw data-plan settings as a list; null becomes no entries.
+
+        No limits, billing dates or counters are changed. Units remain raw.
+        """
+        return self._read_list("cellular.get_data", self._cellular_interface(interface))
+
+    def get_cellular_statistics(self, interface: str) -> Dict[str, Any]:
+        """Read native cellular statistics without clearing or converting counters.
+
+        Accounting periods and firmware-specific nested fields remain raw.
+        """
+        return self._read_object("cellular.get_statistics", self._cellular_interface(interface))
 
     def get_adshield_providers(self) -> Dict[str, Any]:
         """Read the raw provider-catalog object, retaining its providers field."""

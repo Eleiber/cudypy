@@ -66,6 +66,35 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Cellular status, data plans and statistics
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_cellular_status(interface)` | `cellular.getstatus`, `[interface]` | Raw modem-status object |
+| `get_cellular_data_config(interface)` | `cellular.get_data`, `[interface]` | List of raw data-plan objects; null becomes `[]` |
+| `get_cellular_statistics(interface)` | `cellular.get_statistics`, `[interface]` | Raw statistics object |
+
+These helpers are source-backed and offline-tested, not hardware-verified.
+Provide a known cellular interface: the app uses `4g`, but the library supplies
+no default or automatic discovery. Nonempty text is required and passed through
+unchanged; firmware determines which identifiers it supports.
+
+Status and statistics require objects; null is not interpreted as a disconnected
+modem or zero usage. Plan settings require an array of objects (or null for no
+entries). Empty objects/lists and unknown nested fields remain intact. Malformed
+shapes raise `CudyAPIError`; unsupported methods remain `CudyUnsupportedError`.
+Native values such as `cur_traffic`, `his_traffic`, `mon_traffic`, `monthly_data`
+and `start_date` are not converted or treated as verified billing history.
+Counter units, reset boundaries and carrier accounting need separate verification.
+
+Status may expose IMEI, IMSI, ICCID and cell identifiers. Plan settings may expose
+phone numbers and alert configuration. Do not log raw responses. These helpers
+do not enable a modem, switch SIMs, change limits, clear statistics or read SMS.
+
+The contributor checker only performs cellular status/statistics reads when
+`--cellular-interface` is supplied. Data-plan settings additionally require
+`--include-config`. It reports shapes, not identifiers or private values.
+
 ### Ad-blocking providers, settings and statistics
 
 | Helper | RPC / positional arguments | Result |
