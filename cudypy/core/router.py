@@ -400,6 +400,10 @@ class CudyRouter:
             "cellular.getstatus",
             "cellular.get_data",
             "cellular.get_statistics",
+            "devices.get_devlist",
+            "system.upgrade_fwinfo",
+            "system.upgrade_checkstatus",
+            "apply_status",
         }
     )
 
@@ -494,6 +498,40 @@ class CudyRouter:
         Unknown fields and identifiers are preserved without normalization.
         """
         return self._read_list("devices.get_name")
+
+    def get_legacy_devices(self) -> List[Dict[str, Any]]:
+        """Read the legacy raw client array; null becomes no entries.
+
+        Unlike get_devices(), this performs no extended-list pagination or
+        typed conversion. It is not an automatic fallback for failed reads.
+        """
+        return self._read_list("devices.get_devlist")
+
+    def get_firmware_update_info(self) -> Dict[str, Any]:
+        """Read available firmware metadata; do not initiate an update check.
+
+        Metadata may be stale. Does not download or install firmware.
+        """
+        return self._read_object("system.upgrade_fwinfo")
+
+    def get_firmware_check_status(self, device_id: str) -> Optional[str]:
+        """Read an existing firmware-check state once for a known target ID.
+
+        Does not initiate a check, poll, download or upgrade. No target is guessed.
+        """
+        if not isinstance(device_id, str) or not device_id.strip():
+            raise ValueError("device_id must be a nonempty string")
+        result = self.call_api("system.upgrade_checkstatus", [device_id])["result"]
+        if result is not None and not isinstance(result, str):
+            raise CudyAPIError("Firmware check status must be a string or null")
+        return result
+
+    def get_apply_status(self) -> Optional[str]:
+        """Read configuration-application state once; never apply or poll changes."""
+        result = self.call_api("apply_status")["result"]
+        if result is not None and not isinstance(result, str):
+            raise CudyAPIError("Apply status must be a string or null")
+        return result
 
     def get_client_traffic_page(self, page: int = 1) -> Dict[str, Any]:
         """Read one traffic page of up to 100 clients, retaining raw metadata.

@@ -66,6 +66,34 @@ rates in bytes/s. Invalid, negative and non-finite limits are rejected.
 
 ## Compatibility and verification
 
+### Legacy clients and maintenance status
+
+| Helper | RPC / positional arguments | Result |
+| --- | --- | --- |
+| `get_legacy_devices()` | `devices.get_devlist`, `[]` | Raw client-object array; null becomes `[]` |
+| `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | Raw available-firmware metadata object |
+| `get_firmware_check_status(device_id)` | `system.upgrade_checkstatus`, `[device_id]` | Raw state string or `None` |
+| `get_apply_status()` | `apply_status`, `[]` | Raw state string or `None` |
+
+These helpers are source-backed/offline-tested only, not hardware-verified.
+The legacy client reader does not paginate, produce typed `Device` objects or
+act as an automatic fallback when `get_devices()` fails. It retains unknown
+record fields but makes no completeness guarantee beyond the returned array.
+
+Firmware metadata is not a fresh update check and may be stale; this wrapper
+exposes only the no-argument form. The check-status helper requires a known,
+nonempty target ID, sent unchanged. The app uses `000000000000` for its local
+target, but no target is selected automatically and no firmware support for a
+particular ID is assumed. Both status readers perform one read without polling
+or waiting. Unknown state strings, empty strings and null remain distinct; no
+state is guessed to mean success. Object metadata rejects null/non-object
+responses. Malformed shapes raise `CudyAPIError`; unsupported RPCs remain errors.
+
+These methods never initiate an update check, download/install firmware, apply
+configuration or change timezone. They are not automatically called by the
+compatibility checker. `system.zonename` is a setter in the reviewed app
+workflow; use system configuration reads to inspect timezone settings.
+
 ### Cellular status, data plans and statistics
 
 | Helper | RPC / positional arguments | Result |

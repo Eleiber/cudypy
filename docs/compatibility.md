@@ -23,6 +23,9 @@ Observed differences:
 
 ## Verification limits
 
+- Legacy client arrays, firmware metadata/check state and configuration-apply
+  status are source-backed and offline-tested only, not hardware-verified.
+
 - Cellular status, data-plan settings and statistics are source-backed and
   offline-tested only. No cellular-capable model has been verified for these
   helpers; the listed router models do not establish modem support.

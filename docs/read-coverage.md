@@ -54,9 +54,13 @@ dedicated, tested helper.
 | `cellular.getstatus` | `get_cellular_status` |
 | `cellular.get_data` | `get_cellular_data_config` |
 | `cellular.get_statistics` | `get_cellular_statistics` |
+| `devices.get_devlist` | `get_legacy_devices` (raw array, no extended pagination) |
+| `system.upgrade_fwinfo` | `get_firmware_update_info` (no-argument form) |
+| `system.upgrade_checkstatus` | `get_firmware_check_status` (explicit target) |
+| `apply_status` | `get_apply_status` |
 
 The additional configuration, client/Wi-Fi, IPTV, EasyMesh, multi-SSID and
-parental-control, VPN/network, ad-blocking and cellular helpers have source-confirmed argument lists and
+parental-control, VPN/network, ad-blocking, cellular and maintenance helpers have source-confirmed argument lists and
 offline tests, but no hardware verification yet. See [read contracts](feature-reads.md)
 for response types and sensitive-data handling. For older helpers, consult the
 [compatibility guide](compatibility.md): unsupported RPCs remain explicit errors,
@@ -73,13 +77,12 @@ contact external services, generate credentials or mark messages as read.
 | Area | RPC candidates | Next verification |
 | --- | --- | --- |
 | Client identity | `devices.mdns_browse` | Whether browsing performs active discovery; identity certainty remains unproven |
-| Legacy client list | `devices.get_devlist` | Result variants and value beyond the existing extended-list helper |
 | Network | `net.get_inetip`, `net.online_check` | Passive status versus active external checks |
 | Mesh | `mesh.uplinks_scan_result`, `mesh.smt_devices` | Read-only behavior and prerequisites; no scans or enrollment |
 | VPN | `vpn.export_conf` | Sensitive profile/key material; export side effects |
 | Messages | `cellular.list_sms`, `cellular.read_sms` | Pagination and read-state side effects; message privacy |
 | Ad blocking | `adshield.get_dashboard`, `adshield.get_servers`, `adshield.get_device` | Dashboard access URL/session behavior and provider-account calls; external effects remain unverified |
-| Maintenance/status | `sysinfo`, `system.zonename`, `system.upgrade_fwinfo`, `system.upgrade_checkstatus`, `apply_status` | Authentication context, arguments and whether a call reads or changes state |
+| System discovery | `sysinfo` | Observed in a cloud/token workflow; local authentication context and contract remain unverified |
 | Provider integration | `vpn.surfshark_server` | External requests and arguments; not assumed passive |
 
 `get_vpn_profiles()` uses `vpn.get_conf`, distinct from `get_vpn_config()`,
@@ -92,6 +95,10 @@ not be added wholesale to the read-retry allowlist. Login/token exchanges,
 configuration setters, reboot/reset, upgrade/check/download initiation, scans,
 ping tests, enrollment, WPS and OAuth initialization are outside this passive-read
 batch even where they produce useful response data.
+
+`system.zonename` was a review candidate, but the observed caller supplies a
+timezone name to set. It is not a passive getter and is excluded from read
+helpers/retries. Read configured timezone fields through `get_system_config()`.
 
 ## Browser coverage still to review
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add legacy raw clients and one-shot firmware metadata/check/apply status reads.
+  Classify timezone assignment as a setter, not a missing read operation.
+
 - Add cellular status, data-plan settings and native statistics reads with
   explicit interface selection and opt-in, shape-only compatibility checks.
 
