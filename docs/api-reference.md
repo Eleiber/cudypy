@@ -5,16 +5,34 @@ signatures and return types below apply to both. `CudyRouter` calls are
 synchronous; every `AsyncCudyRouter` operation is a coroutine that requires
 `await`. Both use the same [response models](models.md) and exceptions.
 
+This is a maintained Markdown reference, not output from Sphinx or the Python
+docstrings. Each heading gives the public Python signature; the descriptions
+below specify the behavior that matters when calling it.
+
 ## Construct a client
 
 ### `CudyRouter(base_url, password=None, *, auth_token=None, salt=None, timeout=10)`
+
+The synchronous client. Use it with `with` or call `close()` when finished.
+
 ### `AsyncCudyRouter(base_url, password=None, *, auth_token=None, salt=None, timeout=10)`
 
+The asynchronous client. Use it with `async with` or `await close()` when
+finished. Install it with `python -m pip install -e ".[async]"` from this
+repository.
+
+Both constructors accept the parameters below.
+
 `base_url` is the router's HTTP(S) origin without a path or credentials. Supply
-a password or an existing session token. The token is used first when both are
-given. `salt` skips mDNS discovery for password login. `timeout` is the
-per-request limit in seconds. Construction does not connect. Install the async
-client with `python -m pip install -e ".[async]"` from this repository.
+a password or an existing session token. Construction does not connect.
+
+| Parameter | Meaning |
+| --- | --- |
+| `base_url` | Router HTTP(S) origin, without a path or credentials. |
+| `password` | Password used for login when no usable token is available. |
+| `auth_token` | Existing session token; tried before password login when both are supplied. |
+| `salt` | Known login salt; skips mDNS discovery for password login. |
+| `timeout` | Per-request timeout in seconds; default is `10`. |
 
 ```python
 import asyncio
@@ -44,8 +62,14 @@ Closing either client releases local resources and discards local credentials.
 ### `authenticate(force=False) -> bool`
 
 Use an existing token or log in with the configured password. `force=True`
-requires a password and requests a fresh login. A rejected password login
-returns `False`; an authenticated read raises `CudyAuthError` if login fails.
+requires a password and requests a fresh login. A failed login returns
+`False`; an authenticated read raises `CudyAuthError` if login fails.
+
+**Parameters:** `force` requests a new password login instead of accepting the
+current token. **Returns:** `True` when a session is available, `False` when
+password login is rejected or login discovery fails. **Raises:**
+`CudyAuthError` if no password is configured; `CudyAPIError` if the client is
+closed.
 
 ### `call_api(method, params=None, retry_auth=True) -> dict`
 
@@ -53,6 +77,13 @@ Send an RPC method and return the complete envelope, including `result`.
 `params` must be a positional list or `None`. Arbitrary methods can change
 router state. A known read may retry once after authentication rejection when
 a password is available; writes and transport failures are not replayed.
+
+**Parameters:** `method` is the router RPC name; `params` is its positional
+argument list; `retry_auth` enables the read-only authentication retry.
+**Returns:** the RPC envelope as a `dict`, including `result` on success.
+**Raises:** `CudyAuthError` for rejected authentication, `CudyUnsupportedError`
+for an unsupported RPC, and `CudyAPIError` for transport, RPC, or response
+errors. Invalid local arguments raise `ValueError` or `TypeError`.
 
 ### `close() -> None`
 
@@ -65,6 +96,10 @@ Return types show response models rather than raw wire dictionaries. Models
 are detached snapshots; `.raw` exports a copy of their original response.
 `call_api()` remains available when the original RPC envelope is required.
 Firmware-specific availability is recorded in [compatibility](compatibility.md).
+Methods with `Optional[...]` returns use `None` for an absent result; list
+returns may be empty. Unless a method says otherwise, a call reads fresh router
+state and does not change configuration. See [Errors](#errors) for the shared
+exception hierarchy.
 
 ### Status and clients
 
@@ -98,7 +133,8 @@ Read one client's details directly, without downloading the full list.
 
 #### `get_online_devices() -> List[Device]`
 
-Get clients passing the legacy inactivity-below-30 heuristic.
+Filter `get_devices()` to clients whose reported inactivity is below 30
+seconds. This is an activity heuristic, not a reachability check.
 
 #### `get_wifi_devices() -> List[Device]`
 
@@ -122,7 +158,8 @@ Find a device by its hostname.
 
 #### `get_client_names() -> List[ClientName]`
 
-Read List[ClientName]; see the model reference for fields and limits.
+Return saved client names and router-provided metadata. An empty list means
+the router returned no entries; these records do not prove a client is online.
 
 #### `get_client_traffic_page(page: int=1) -> ResponsePage[ClientTraffic]`
 
@@ -134,7 +171,8 @@ Read a client's configured Mbps limits; null means no configuration.
 
 #### `get_client_internet_schedule(mac: str) -> List[Configuration]`
 
-Read List[Configuration]; see the model reference for fields and limits.
+Return the selected client's configured Internet access schedules. `mac` is
+the client's MAC address; an empty list means no schedules were returned.
 
 ### Network and wireless
 
@@ -144,7 +182,7 @@ Return firmware feature declarations without guessing model capabilities.
 
 #### `get_ethernet_status() -> List[EthernetPort]`
 
-Read List[EthernetPort]; see the model reference for fields and limits.
+Return the router's Ethernet port status as typed records.
 
 #### `get_ethernet_ports() -> List[EthernetPort]`
 
@@ -152,7 +190,7 @@ Read typed port status, normalizing firmware auto/autoneg variants.
 
 #### `get_traffic_stats() -> ResponseValue`
 
-Return raw network traffic statistics.
+Return firmware traffic statistics as a [dynamic value](#firmware-records-and-pages).
 
 #### `get_online_interfaces() -> List[str]`
 
@@ -160,15 +198,18 @@ Read firmware-reported online interface names, without a reachability test.
 
 #### `get_work_modes() -> List[WorkMode]`
 
-Read List[WorkMode]; see the model reference for fields and limits.
+Return work modes reported by the firmware. Each entry retains its native
+keys alongside parsed `mode` and `name` fields.
 
 #### `get_wifi_schedule() -> List[Configuration]`
 
-Read List[Configuration]; see the model reference for fields and limits.
+Return configured Wi-Fi schedule entries; an empty list means none were
+returned.
 
 #### `get_wds_status(interface: Optional[str]=None) -> Optional[WdsStatus]`
 
-Read Optional[WdsStatus]; see the model reference for fields and limits.
+Return WDS link status for `interface`, or the router's default selection when
+it is `None`. An absent router result becomes `None`.
 
 #### `get_wps_status() -> Optional[str]`
 
@@ -176,7 +217,8 @@ Read the firmware WPS state string; this does not start WPS.
 
 #### `get_wifi_frequencies() -> FirmwareRecord`
 
-Read FirmwareRecord; see the model reference for fields and limits.
+Return firmware-reported Wi-Fi frequency information. Keys vary by model and
+remain available through mapping access.
 
 #### `get_wifi_scan_results(interface: Optional[str]=None) -> Optional[List[AccessPoint]]`
 
@@ -188,11 +230,13 @@ Read configured LAN fields; this is not live interface status.
 
 #### `get_dhcp_config() -> ConfigurationSections`
 
-Read ConfigurationSections; see the model reference for fields and limits.
+Return named DHCP configuration sections. Use `.section(name)` to retrieve an
+individual section, or `None` when that section is absent.
 
 #### `get_wireless_config() -> ConfigurationSections`
 
-Read ConfigurationSections; see the model reference for fields and limits.
+Return named wireless configuration sections. Use `.section(name)` to retrieve
+one; returned data may contain credentials.
 
 #### `get_wireless_interface(section: str) -> Optional[WirelessInterface]`
 
@@ -214,15 +258,15 @@ Read firmware-specific VPN status; older firmware may reject the method.
 
 #### `get_vpn_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return the router's VPN configuration as a firmware-defined record.
 
 #### `get_vpn_profiles(category: str='clients') -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return VPN profiles in `category`; the default category is `"clients"`.
 
 #### `get_vpn_client_config(client_id: str) -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return configuration for the selected VPN client ID.
 
 #### `get_vpn_connection_page(vpn_type: str, page: int=1) -> ResponsePage[FirmwareRecord]`
 
@@ -230,11 +274,11 @@ Read one connection page of up to 100 entries; not historical usage.
 
 #### `get_iptv_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return IPTV configuration, retaining firmware-specific keys.
 
 #### `get_easymesh_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return EasyMesh configuration, retaining firmware-specific keys.
 
 #### `get_multi_ssid_interfaces() -> List[str]`
 
@@ -246,33 +290,34 @@ Read one known multi-SSID section; null remains absent/unknown.
 
 #### `get_parental_control_config(group: Optional[str]=None) -> List[ParentalGroup]`
 
-Read List[ParentalGroup]; see the model reference for fields and limits.
+Return parental-control groups, or entries selected by `group` when supplied.
+An empty list means no matching entries were returned.
 
 ### System and provider configuration
 
 #### `get_system_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return system configuration as a firmware-defined record.
 
 #### `get_ipv6_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return configured IPv6 settings.
 
 #### `get_default_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return the router's firmware-defined default configuration.
 
 #### `get_ddns_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return configured dynamic DNS settings.
 
 #### `get_connectivity_check_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return connectivity-check settings configured on the router.
 
 #### `get_auto_reboot_config() -> Optional[Configuration]`
 
-Read Optional[Configuration]; see the model reference for fields and limits.
+Return automatic-reboot settings, or `None` if the router returns no settings.
 
 #### `get_qos_config() -> ResponseValue`
 
@@ -280,35 +325,36 @@ Read firmware-defined QoS JSON; preserve null and all result shapes.
 
 #### `get_cellular_status(interface: str) -> FirmwareRecord`
 
-Read FirmwareRecord; see the model reference for fields and limits.
+Return cellular runtime status for the named `interface`.
 
 #### `get_cellular_data_config(interface: str) -> List[Configuration]`
 
-Read List[Configuration]; see the model reference for fields and limits.
+Return cellular data configuration entries for the named `interface`.
 
 #### `get_cellular_statistics(interface: str) -> FirmwareRecord`
 
-Read FirmwareRecord; see the model reference for fields and limits.
+Return firmware cellular statistics for the named `interface`.
 
 #### `get_adshield_providers() -> ProviderCatalog`
 
-Read ProviderCatalog; see the model reference for fields and limits.
+Return the router's AdShield provider catalog.
 
 #### `get_adshield_config() -> Configuration`
 
-Read Configuration; see the model reference for fields and limits.
+Return AdShield configuration as a firmware-defined record.
 
 #### `get_adshield_status(provider: str) -> FirmwareRecord`
 
-Read FirmwareRecord; see the model reference for fields and limits.
+Return current AdShield status for the named `provider`.
 
 #### `get_adshield_stats(provider: str) -> FirmwareRecord`
 
-Read FirmwareRecord; see the model reference for fields and limits.
+Return AdShield statistics for the named `provider`.
 
 #### `get_firmware_update_info() -> Optional[FirmwareRecord]`
 
-Read Optional[FirmwareRecord]; see the model reference for fields and limits.
+Return available firmware-update information, or `None` when the router
+returns no update record. This call does not install firmware.
 
 #### `get_firmware_check_status(device_id: str) -> Optional[str]`
 
