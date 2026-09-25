@@ -357,14 +357,14 @@ Returned by `get_system_info()` and `get_system_status()`.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `model`, `firmware`, `board_name` | `str | None` | Router-reported identity and firmware text. |
-| `uptime_seconds` | `int | None` | Reported uptime. |
-| `memory`, `swap`, `root`, `tmp` | `ResourceUsage | None` | Reported resource counters; each has its own `.raw`. |
-| `cpu_usage` | `float | None` | Router-reported nonnegative CPU value; fractional values are retained. |
-| `load` | `tuple[int, ...] | None` | Native load values, without unit conversion. |
-| `processor`, `revision`, `rom`, `country`, `device_type` | `str | None` | Additional reported system fields. |
-| `serial_number`, `mac_address`, `lan_ip` | `str | None` | Router identifiers and LAN address; excluded from repr. |
-| `timestamp`, `localtime` | `int | None` | Router-reported time values. |
+| `model`, `firmware`, `board_name` | `Optional[str]` | Router-reported identity and firmware text. |
+| `uptime_seconds` | `Optional[int]` | Reported uptime. |
+| `memory`, `swap`, `root`, `tmp` | `Optional[ResourceUsage]` | Reported resource counters; each has its own `.raw`. |
+| `cpu_usage` | `Optional[float]` | Router-reported nonnegative CPU value; fractional values are retained. |
+| `load` | `Optional[tuple[int, ...]]` | Native load values, without unit conversion. |
+| `processor`, `revision`, `rom`, `country`, `device_type` | `Optional[str]` | Additional reported system fields. |
+| `serial_number`, `mac_address`, `lan_ip` | `Optional[str]` | Router identifiers and LAN address; excluded from repr. |
+| `timestamp`, `localtime` | `Optional[int]` | Router-reported time values. |
 | `raw` | `dict` | Copy of the complete `system.info` result. |
 
 `ResourceUsage` has `total`, `used`, `free`, `available`, `shared`, `cached`,
@@ -377,10 +377,10 @@ Returned by `get_network_status()` and `get_interface_status()`.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `is_up` | `bool | None` | Reported runtime link state. |
-| `protocol`, `interface` | `str | None` | Protocol and interface name. |
-| `ip_address`, `gateway` | `str | None` | Reported runtime addresses. |
-| `uptime_seconds`, `rx_bytes`, `tx_bytes` | `int | None` | Native runtime counters. |
+| `is_up` | `Optional[bool]` | Reported runtime link state. |
+| `protocol`, `interface` | `Optional[str]` | Protocol and interface name. |
+| `ip_address`, `gateway` | `Optional[str]` | Reported runtime addresses. |
+| `uptime_seconds`, `rx_bytes`, `tx_bytes` | `Optional[int]` | Native runtime counters. |
 | `raw` | `dict` | Copy of the complete interface response. |
 
 ### `Device`
@@ -390,16 +390,16 @@ Returned by `get_devices()`, its filters and lookups, and `get_client_info()`.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `mac_address`, `ip_address` | `str` | Reported client addresses; an absent address becomes `"unknown"`. |
-| `hostname`, `device_name` | `str | None` | Reported client names. |
-| `connection_type` | `str | None` | Parsed `"wifi"` or `"ethernet"` when identifiable. |
-| `interface`, `raw_iface` | `str | None` | Reported interface names. |
-| `signal_strength` | `int | None` | Wi-Fi signal in dBm when available. |
-| `bandwidth_up`, `bandwidth_down` | `int | None` | Reported byte rates per second. |
-| `bytes_received`, `bytes_sent` | `int | None` | Reported client counters; accounting viewpoint remains unverified. |
-| `reported_upbytes`, `reported_downbytes` | `int | None` | Additional native byte counters. |
-| `inactive_time`, `reported_online_seconds` | `int | None` | Router-reported activity and elapsed time. |
-| `is_online` | `bool | None` | `inactive_time < 30` heuristic, not a reachability test. |
-| `connected_since` | `datetime | None` | Local estimate derived from reported elapsed seconds. |
+| `hostname`, `device_name` | `Optional[str]` | Reported client names. |
+| `connection_type` | `Optional[str]` | Parsed `"wifi"` or `"ethernet"` when identifiable. |
+| `interface`, `raw_iface` | `Optional[str]` | Reported interface names. |
+| `signal_strength` | `Optional[int]` | Wi-Fi signal in dBm when available. |
+| `bandwidth_up`, `bandwidth_down` | `Optional[int]` | Reported byte rates per second. |
+| `bytes_received`, `bytes_sent` | `Optional[int]` | Reported client counters; accounting viewpoint remains unverified. |
+| `reported_upbytes`, `reported_downbytes` | `Optional[int]` | Additional native byte counters. |
+| `inactive_time`, `reported_online_seconds` | `Optional[int]` | Router-reported activity and elapsed time. |
+| `is_online` | `Optional[bool]` | `inactive_time < 30` heuristic, not a reachability test. |
+| `connected_since` | `Optional[datetime]` | Local estimate derived from reported elapsed seconds. |
 | `has_internet`, `is_vpn` | `bool` | Parsed client flags. |
 | `raw` | `dict` | Copy of the client record. |
 
@@ -412,10 +412,10 @@ Computed properties include `recently_active`, `reported_inbytes`,
 
 | Model | Declared fields |
 | --- | --- |
-| `EthernetPort` | `port: int | None`, `label: str | None`, `link_up: bool | None`, `speed_mbps: int | None`, `full_duplex: bool | None`, `auto_negotiation: bool | None`, `tx_bytes: int | None`, `rx_bytes: int | None`, `raw: dict`. |
-| `LanConfig` | `protocol`, `ip_address`, `netmask`, `gateway`, `interface` (`str | None`), `raw: dict`. These are configured LAN values, not runtime status. |
-| `WirelessInterface` | `section: str`; `ssid`, `encryption`, `device`, `mode` (`str | None`); `disabled`, `hidden` (`bool | None`); `raw: dict`. The raw section may include credentials. |
-| `RateLimit` | `download_mbps`, `upload_mbps` (`Decimal | None`), `raw: dict`. |
+| `EthernetPort` | `port: Optional[int]`, `label: Optional[str]`, `link_up: Optional[bool]`, `speed_mbps: Optional[int]`, `full_duplex: Optional[bool]`, `auto_negotiation: Optional[bool]`, `tx_bytes: Optional[int]`, `rx_bytes: Optional[int]`, `raw: dict`. |
+| `LanConfig` | `protocol`, `ip_address`, `netmask`, `gateway`, `interface` (`Optional[str]`), `raw: dict`. These are configured LAN values, not runtime status. |
+| `WirelessInterface` | `section: str`; `ssid`, `encryption`, `device`, `mode` (`Optional[str]`); `disabled`, `hidden` (`Optional[bool]`); `raw: dict`. The raw section may include credentials. |
+| `RateLimit` | `download_mbps`, `upload_mbps` (`Optional[Decimal]`), `raw: dict`. |
 
 ### Firmware records and pages
 
@@ -430,13 +430,13 @@ remain available through mapping access and `.raw`.
 
 | Model | Declared fields |
 | --- | --- |
-| `ClientName` | `mac_address: str | None`, `name: str | None`. |
-| `WorkMode` | `mode: str | None`, `name: str | None`. |
-| `ClientTraffic` | `mac_address: str | None`; `upload_bytes_per_second`, `download_bytes_per_second`, `reported_inbytes`, `reported_outbytes`, `reported_upbytes`, `reported_downbytes` (`int | None`). Counter direction and reset periods are unverified. |
-| `AccessPoint` | `ssid: str | None`. |
-| `WdsStatus` | `is_up: bool | None`. |
-| `ParentalGroup` | `name: str | None`. |
-| `ProviderCatalog` | `providers: tuple[str, ...] | None`. |
+| `ClientName` | `mac_address: Optional[str]`, `name: Optional[str]`. |
+| `WorkMode` | `mode: Optional[str]`, `name: Optional[str]`. |
+| `ClientTraffic` | `mac_address: Optional[str]`; `upload_bytes_per_second`, `download_bytes_per_second`, `reported_inbytes`, `reported_outbytes`, `reported_upbytes`, `reported_downbytes` (`Optional[int]`). Counter direction and reset periods are unverified. |
+| `AccessPoint` | `ssid: Optional[str]`. |
+| `WdsStatus` | `is_up: Optional[bool]`. |
+| `ParentalGroup` | `name: Optional[str]`. |
+| `ProviderCatalog` | `providers: Optional[tuple[str, ...]]`. |
 
 `ResponsePage[T]` exposes `entries: tuple[T, ...]`,
 `total_count: int | None`, and `.raw`. A page is one explicit router read;

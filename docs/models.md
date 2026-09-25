@@ -3,9 +3,8 @@
 Ordinary `router.get_*()` calls return response models. This reference describes
 their types, fields, snapshot behavior and access to firmware-specific data.
 
-This layer performs **response deserialization and model mapping**: JSON objects
-become Python response models. It is not an ORM, a database persistence layer,
-or a new asynchronous transport.
+This layer maps JSON responses to Python models. It does not persist data.
+Both the synchronous and async clients return these models.
 
 ```python
 import os
@@ -34,33 +33,45 @@ or hardware verification.
 
 ## Models and coverage
 
-Every public `CudyRouter.get_*` is covered by the model API inventory. Tests
-check getter coverage and parameter/default compatibility. Mutation methods
-remain explicitly separate; model reads never invoke them.
+Each named getter exists on both clients; async calls require `await`.
 
-| Getter(s), with `get_` prefix | Returned model |
-| --- | --- |
-| `system_info`, `system_status` | `SystemStatus`, including `ResourceUsage` children |
-| `network_status`, `interface_status` | `InterfaceStatus` |
-| `devices`, `online_devices`, `wifi_devices`, `ethernet_devices` | List of existing `Device` models |
-| `device_by_mac`, `device_by_ip`, `device_by_hostname`, `client_info` | Optional `Device` |
-| `ethernet_status`, `ethernet_ports` | List of `EthernetPort` |
-| `lan_config`, `client_rate_limit`, `wireless_interface` | Existing `LanConfig`, optional `RateLimit`, optional `WirelessInterface` |
-| `multi_ssid_config` | Optional `WirelessInterface` for the selected section |
-| `client_names`, `work_modes` | Lists of `ClientName`, `WorkMode` |
-| `wifi_scan_results`, `wds_status` | Optional list of `AccessPoint`, optional `WdsStatus` |
-| `parental_control_config`, `adshield_providers` | List of `ParentalGroup`, `ProviderCatalog` |
-| `client_traffic_page` | `ResponsePage[ClientTraffic]` |
-| `mesh_device_page`, `vpn_connection_page` | `ResponsePage[FirmwareRecord]` |
-| `dhcp_config`, `wireless_config` | `ConfigurationSections` |
-| `system_config`, `ipv6_config`, `default_config`, `ddns_config`, `connectivity_check_config`, `iptv_config`, `easymesh_config`, `vpn_config`, `vpn_profiles`, `vpn_client_config`, `adshield_config` | `Configuration` |
-| `auto_reboot_config` | Optional `Configuration` |
-| `wifi_schedule`, `client_internet_schedule`, `cellular_data_config` | Lists of `Configuration` |
-| `wifi_frequencies`, `cellular_status`, `cellular_statistics`, `adshield_status`, `adshield_stats` | `FirmwareRecord` |
-| `firmware_update_info` | Optional `FirmwareRecord` |
-| `supported_features`, `mesh_clients`, `traffic_stats`, `vpn_status`, `qos_config` | `ResponseValue`: recursively mapped record/tuple/scalar/null, preserving firmware-specific top-level shapes |
-| `wps_status`, `firmware_check_status`, `apply_status` | Optional string; no guessed enum or success interpretation |
-| `online_interfaces`, `multi_ssid_interfaces` | Lists of strings |
+- `SystemStatus`: `get_system_info()`, `get_system_status()`. Resource fields
+  contain `ResourceUsage` snapshots.
+- `InterfaceStatus`: `get_network_status()`, `get_interface_status()`.
+- `list[Device]`: `get_devices()`, `get_online_devices()`, `get_wifi_devices()`,
+  `get_ethernet_devices()`.
+- `Device | None`: `get_client_info()`, `get_device_by_mac()`,
+  `get_device_by_ip()`, `get_device_by_hostname()`.
+- `list[EthernetPort]`: `get_ethernet_status()`, `get_ethernet_ports()`.
+- `LanConfig`: `get_lan_config()`. `RateLimit | None`: `get_client_rate_limit()`.
+- `WirelessInterface | None`: `get_wireless_interface()`,
+  `get_multi_ssid_config()`.
+- `list[ClientName]` and `list[WorkMode]`: `get_client_names()` and
+  `get_work_modes()`, respectively.
+- `list[AccessPoint] | None`: `get_wifi_scan_results()`.
+  `WdsStatus | None`: `get_wds_status()`.
+- `list[ParentalGroup]`: `get_parental_control_config()`.
+  `ProviderCatalog`: `get_adshield_providers()`.
+- `ResponsePage[ClientTraffic]`: `get_client_traffic_page()`.
+- `ResponsePage[FirmwareRecord]`: `get_mesh_device_page()` and
+  `get_vpn_connection_page()`.
+- `ConfigurationSections`: `get_dhcp_config()`, `get_wireless_config()`.
+- `Configuration`: `get_system_config()`, `get_ipv6_config()`,
+  `get_default_config()`, `get_ddns_config()`, `get_connectivity_check_config()`.
+- `Configuration`: `get_iptv_config()`, `get_easymesh_config()`,
+  `get_vpn_config()`, `get_vpn_profiles()`, `get_vpn_client_config()`,
+  `get_adshield_config()`.
+- `Configuration | None`: `get_auto_reboot_config()`.
+- `list[Configuration]`: `get_wifi_schedule()`,
+  `get_client_internet_schedule()`, `get_cellular_data_config()`.
+- `FirmwareRecord`: `get_wifi_frequencies()`, `get_cellular_status()`,
+  `get_cellular_statistics()`, `get_adshield_status()`, `get_adshield_stats()`.
+- `FirmwareRecord | None`: `get_firmware_update_info()`.
+- `ResponseValue`: `get_supported_features()`, `get_mesh_clients()`,
+  `get_traffic_stats()`, `get_vpn_status()`, `get_qos_config()`.
+- `str | None`: `get_wps_status()`, `get_firmware_check_status()`,
+  `get_apply_status()`.
+- `list[str]`: `get_online_interfaces()`, `get_multi_ssid_interfaces()`.
 
 Scalar results stay scalars: wrapping an interface name or an unknown state
 string in a class adds no useful parsing. Null and empty results retain the
@@ -85,10 +96,16 @@ Direct property access on manually constructed records can raise `ValueError`.
 
 Unverified configuration, provider, cellular and other nested schemas use
 `FirmwareRecord` or its configuration subclasses. These are flexible structured
-records, **not fully schema-validated domain models**. For example, a synthetic
-response `{"provider": {"enabled": "0"}}` allows `record.provider.enabled`, but
-the value stays the string `"0"`; generic mapping never guesses boolean semantics.
-Further field-specific models can be added as contracts are verified.
+records with firmware-defined keys. For example:
+
+```python
+from cudypy import FirmwareRecord
+
+record = FirmwareRecord({"provider": {"enabled": "0"}})
+assert record.provider.enabled == "0"
+```
+
+The value stays a string; generic mapping does not infer a boolean.
 
 Dynamic attributes raise `AttributeError` when absent. Use `.get("field")` for
 optional unknown keys or `"field" in record` to distinguish absence from null.
@@ -124,10 +141,17 @@ Do not share the owning client across concurrent threads.
 
 ## Accessing original response data
 
-Access documented fields through attributes, such as
-`router.get_system_info().model`. For original response keys use
-`router.get_system_info().raw["model"]`. Lists of models can be exported with
-`[item.raw for item in result]`. Scalars and null retain their documented behavior.
+With an existing synchronous `router`, access documented fields through
+attributes and original response keys through `.raw`:
+
+```python
+status = router.get_system_info()
+model = status.model
+wire_model = status.raw["model"]
+client_records = [item.raw for item in router.get_devices()]
+```
+
+Scalars and null retain their documented behavior.
 
 For an entirely unparsed response use the low-level escape hatch:
 
