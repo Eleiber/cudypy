@@ -1,8 +1,9 @@
-# Local monitoring dashboard
+# Optional local dashboard example
 
-A local read-only monitoring UI using Flask and browser-native SVG. No frontend
-build, CDN, external fonts or charting service is needed. It works without
-Internet access once the Python dependencies are installed.
+A small read-only Flask UI for exploring per-client rates over the lifetime of
+one browser tab. The router's own panel already graphs interface bandwidth and
+offers the fuller administration UI. Use this example if per-client selection,
+search and short-lived rate history are useful to you.
 
 ## Start
 
@@ -44,10 +45,8 @@ change the dashboard connection, not router configuration. Changing targets
 requires new credentials and clears history. Tokens are replaced by restarting
 with a fresh environment value. The UI exposes no library mutation controls.
 
-The inspected stock panels already have per-interface bandwidth graphs. This
-dashboard provides tab-local client-rate exploration; graphs alone are not a
-unique advantage. See the [router web-interface comparison](../docs/web-interface.md)
-for confirmed differences and remaining coverage. This is not a full panel replacement.
+See the [router web-interface comparison](../docs/web-interface.md) for the
+observed differences. The dashboard is not a full panel replacement.
 
 ## Tests
 

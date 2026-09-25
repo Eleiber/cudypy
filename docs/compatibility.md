@@ -20,11 +20,21 @@ below, not every configuration or firmware available for a model.
 | Existing session token and authenticated read | ✓ | ✓ |
 | Password login over HTTP, automatic salt discovery and default transport | ✓ | ✓ |
 | Two coexisting API sessions with concurrent reads | ✓ | — |
+| Async password login, mDNS discovery and concurrent reads | — | ✓ |
+| Async session-token read | — | ✓ |
 
 Both login modes include an authenticated status read. The two-session check
 used distinct tokens, sequential logins and two rounds of concurrent status reads
 without reauthentication. Maximum session count, session lifetime, simultaneous
 logins, browser/API coexistence and refresh after expiry remain unverified.
+
+The installed async wheel also completed a broader read-only WR3000 V2.0 run
+covering available status, client, Wi-Fi, VPN, network, configuration and
+maintenance getters. Per-client Internet schedules and EasyMesh returned
+`-32601`; multi-SSID listing returned `-32004`, matching the firmware behavior
+below. An async client using the password session's token completed a separate
+system-status read. Async writes and automatic reauthentication after expiry
+remain untested on hardware.
 
 ## Read verification
 
@@ -35,7 +45,7 @@ The table includes additional selected-client checks beyond the 38-helper pass.
 | Read / request form | WR3000H V1.0 | WR3000 V2.0 |
 | --- | --- | --- |
 | System and interface status | ✓ | ✓ |
-| Extended and legacy client lists; client-name records | ✓ | ✓ |
+| Extended client lists; client-name records | ✓ | ✓ |
 | Individual client details and rate limits | ✓ | ✓ |
 | Per-client Internet schedules | ✗ `-32601` | ✗ `-32601` |
 | Feature declarations and Ethernet port status | ✓ | ✓ |

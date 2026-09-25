@@ -7,13 +7,9 @@ python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-Tests belong in `tests/`, reusable manual verification tools in `tools/`, and
-end-user usage examples in `examples/`. Keep synthetic fixtures reproducible;
-never include router tokens, passwords, real client inventories or private
-configuration. The unit suite blocks unmocked HTTP requests.
-
-Optional dashboard dependencies and browser/graph checks are described in the
-[dashboard guide](dashboard/README.md). They use synthetic data, not routers.
+Tests belong in `tests/`, manual verification tools in `tools/`, and usage
+examples in `examples/`. Use synthetic fixtures so regression tests are
+reproducible. The test suite blocks unmocked HTTP requests.
 
 ## Manual read-only verification
 
@@ -24,23 +20,24 @@ python -m tools.verify_read_only --url "$CUDY_ROUTER_URL" --token-file "$CUDY_TO
 ```
 
 The tool performs named status reads and reports structural types. Optional
-`--include-config`, `--client-mac` and `--mesh-node` add explicitly selected
-reads. Configuration can contain credentials even if the report omits them.
+`--include-config`, `--client-mac` and `--mesh-node` add selected reads.
 Use `--cellular-interface` with a known interface for cellular status/statistics;
 cellular data-plan settings also require `--include-config`. No interface is guessed.
 The tool never sends mutations, scans or password-login requests. Optional
 unsupported reads are reported separately; successful exit requires the core
 system and device reads, not success for every optional method.
 
-## Change and publication checks
+## API changes
 
-Document parameter structures, response types and compatibility limits in
-standalone terms. Brief attribution to app or web-interface behavior is useful;
-public docs should describe usable contracts without requiring external source files.
+Update the [API reference](docs/api-reference.md) when changing a public method.
+Put RPC parameters and response shapes in the relevant operation guide, and
+router-specific observations in [compatibility](docs/compatibility.md). Keep
+the [read coverage checklist](docs/read-coverage.md) as an implementation tracker.
+
+## Release checks
 
 Build with `python -m build` and inspect both archives before release. Regression
 tests and manual tools are included in the source distribution, not the library
 wheel. Only intended project files should enter either archive.
 
-Review the staged diff before committing. Ignore rules do not untrack files
-that were already committed, and removing a file later does not remove history.
+Review the staged diff before committing.

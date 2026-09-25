@@ -57,7 +57,7 @@ remain explicitly separate; model reads never invoke them.
 | `auto_reboot_config` | Optional `Configuration` |
 | `wifi_schedule`, `client_internet_schedule`, `cellular_data_config` | Lists of `Configuration` |
 | `wifi_frequencies`, `cellular_status`, `cellular_statistics`, `adshield_status`, `adshield_stats` | `FirmwareRecord` |
-| `legacy_devices`, `firmware_update_info` | List of `FirmwareRecord`, optional `FirmwareRecord` |
+| `firmware_update_info` | Optional `FirmwareRecord` |
 | `supported_features`, `mesh_clients`, `traffic_stats`, `vpn_status`, `qos_config` | `ResponseValue`: recursively mapped record/tuple/scalar/null, preserving firmware-specific top-level shapes |
 | `wps_status`, `firmware_check_status`, `apply_status` | Optional string; no guessed enum or success interpretation |
 | `online_interfaces`, `multi_ssid_interfaces` | Lists of strings |

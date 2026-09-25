@@ -57,7 +57,6 @@ dedicated, tested helper.
 | `cellular.getstatus` | `get_cellular_status` |
 | `cellular.get_data` | `get_cellular_data_config` |
 | `cellular.get_statistics` | `get_cellular_statistics` |
-| `devices.get_devlist` | `get_legacy_devices` (list of `FirmwareRecord`, no extended pagination) |
 | `system.upgrade_fwinfo` | `get_firmware_update_info` (no-argument form) |
 | `system.upgrade_checkstatus` | `get_firmware_check_status` (explicit target) |
 | `apply_status` | `get_apply_status` |

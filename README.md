@@ -1,8 +1,12 @@
 # CudyPy
 
-CudyPy is an unofficial, experimental synchronous Python wrapper for Cudy's local
+CudyPy is an unofficial Python wrapper for Cudy's local
 LuCI app RPC API. See [compatibility and verification coverage](docs/compatibility.md)
 for tested models, firmware and verification limits.
+
+`AsyncCudyRouter` provides native asyncio requests for every named router
+operation; `CudyRouter` provides the same synchronous API. Start with the
+[API reference](docs/api-reference.md) for signatures and examples.
 
 Use `router.get_*()` for object-based reads: system/client models,
 nested response records and explicit page objects. See the
@@ -16,10 +20,12 @@ From the repository root, with Python 3.10 or later:
 ```sh
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e ".[async]"
 ```
 
 See [INSTALL.md](INSTALL.md) for development and build instructions.
+The runnable [async example](examples/async_usage.py) accepts a password or
+existing session token from environment variables.
 
 ## Read with an existing session token
 
@@ -28,23 +34,23 @@ Use the token value from the router's `auth` query parameter or `sysauth`
 cookie, not an entire Cookie header. Each router needs its own token.
 
 ```python
+import asyncio
 import os
-from cudypy import CudyRouter, CudyAPIError
+from cudypy import AsyncCudyRouter
 
-try:
-    with CudyRouter(
+async def main():
+    async with AsyncCudyRouter(
         os.environ["CUDY_ROUTER_URL"],
         auth_token=os.environ["CUDY_ROUTER_TOKEN"],
-        timeout=10,
     ) as router:
-        status = router.get_system_status()
-        print(status.model, status.firmware, status.uptime_seconds)
-        if status.memory is not None:
-            print(status.memory.available)  # Firmware-native counter units.
-        for device in router.get_devices():
-            print(device, device.connection_type)
-except CudyAPIError as error:
-    print(error)
+        status, wan, devices = await asyncio.gather(
+            router.get_system_status(),
+            router.get_interface_status("wan"),
+            router.get_devices(),
+        )
+        print(status.model, wan.is_up, len(devices))
+
+asyncio.run(main())
 ```
 
 Token sessions do not need mDNS, a device ID, or your password. Expired tokens
@@ -54,7 +60,7 @@ or change router configuration.
 
 ## Example usage and output
 
-With a configured `router` (synthetic values shown):
+With a configured synchronous `router` (synthetic values shown):
 
 ```pycon
 >>> status = router.get_system_info()
@@ -78,23 +84,24 @@ See the [model reference](docs/models.md) for other response types.
 ## Password authentication
 
 ```python
+import asyncio
 import os
-from cudypy import CudyRouter
+from cudypy import AsyncCudyRouter
 
-with CudyRouter(
-    os.environ["CUDY_ROUTER_URL"],
-    password=os.environ["CUDY_ROUTER_PASSWORD"],
-    # salt="known-router-salt",  # optional: bypass mDNS when already known
-) as router:
-    if not router.authenticate():
-        raise RuntimeError("Router authentication failed")
-    print(router.get_system_status().firmware)
+async def main():
+    async with AsyncCudyRouter(
+        os.environ["CUDY_ROUTER_URL"],
+        password=os.environ["CUDY_ROUTER_PASSWORD"],
+    ) as router:
+        if not await router.authenticate():
+            raise RuntimeError("Router authentication failed")
+        print((await router.get_system_status()).firmware)
+
+asyncio.run(main())
 ```
 
 Without an explicit salt, the client discovers the router's salt over mDNS.
-Use a literal router IP for mDNS matching. The legacy `devid` parameter is
-accepted but is not sent by the local transport, matching the APK's transient
-device ID field.
+Use a literal router IP for mDNS matching.
 
 `authenticate()` retains the prototype's boolean result for password login
 failures. API reads authenticate on demand and raise `CudyAuthError` when
@@ -105,7 +112,7 @@ replayed.
 
 ## API
 
-Ordinary getters return models by default. The
+Both clients return models from ordinary getters. The
 [model reference](docs/models.md#models-and-coverage) lists all return types.
 
 Typed readers return snapshots: accessing their attributes does not send network

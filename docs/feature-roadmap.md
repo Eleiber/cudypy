@@ -41,5 +41,5 @@ guides for exact contracts, side effects and validation boundaries.
 
 The [dashboard](../dashboard/README.md) adds session-local rate graphs, per-client
 selection, search/sort and controlled polling. It has no persistent history or
-full router-configuration UI. [Async support](async.md) is feasible but not yet
-implemented natively; the Python client remains synchronous.
+full router-configuration UI. [AsyncCudyRouter](async.md) provides native
+asyncio transport for the same named operations as the synchronous client.

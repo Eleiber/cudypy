@@ -10,7 +10,7 @@ class TestRouterInitialization:
 
     def test_init_valid_params(self):
         """Test initialization with valid parameters."""
-        with patch.object(CudyRouter, "_discover_salt_and_devid"):
+        with patch.object(CudyRouter, "_discover_salt"):
             router = CudyRouter("http://192.168.10.1", "password123")
             assert router.base_url == "http://192.168.10.1"
             assert router._password == "password123"
@@ -19,7 +19,7 @@ class TestRouterInitialization:
 
     def test_init_strips_trailing_slash(self):
         """Test that trailing slash is removed from URL."""
-        with patch.object(CudyRouter, "_discover_salt_and_devid"):
+        with patch.object(CudyRouter, "_discover_salt"):
             router = CudyRouter("http://192.168.10.1/", "password")
             assert router.base_url == "http://192.168.10.1"
 
@@ -73,19 +73,19 @@ class TestIPExtraction:
 
     def test_extract_ip_from_http_url(self):
         """Test extracting IP from HTTP URL."""
-        with patch.object(CudyRouter, "_discover_salt_and_devid"):
+        with patch.object(CudyRouter, "_discover_salt"):
             router = CudyRouter("http://192.168.10.1", "password")
             assert router.router_ip == "192.168.10.1"
 
     def test_extract_ip_from_https_url(self):
         """Test extracting IP from HTTPS URL."""
-        with patch.object(CudyRouter, "_discover_salt_and_devid"):
+        with patch.object(CudyRouter, "_discover_salt"):
             router = CudyRouter("https://192.168.1.1", "password")
             assert router.router_ip == "192.168.1.1"
 
     def test_extract_hostname_from_url(self):
         """Test extracting hostname from URL."""
-        with patch.object(CudyRouter, "_discover_salt_and_devid"):
+        with patch.object(CudyRouter, "_discover_salt"):
             router = CudyRouter("http://router.local", "password")
             assert router.router_ip == "router.local"
 

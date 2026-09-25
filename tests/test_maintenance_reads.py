@@ -1,4 +1,4 @@
-"""Read-only maintenance and legacy-client contracts; no firmware actions."""
+"""Read-only maintenance contracts; no firmware actions."""
 
 from tests import response_raw
 
@@ -9,13 +9,6 @@ import pytest
 from cudypy import CudyAPIError, CudyAuthError, CudyRouter, CudyUnsupportedError
 
 CASES = [
-    (
-        "get_legacy_devices",
-        (),
-        "devices.get_devlist",
-        [],
-        [{"macaddr": "020000000001", "future": None}],
-    ),
     (
         "get_firmware_update_info",
         (),
@@ -47,7 +40,6 @@ def test_exact_single_request(reader, args, method, params, result):
 @pytest.mark.parametrize(
     "reader,args,result,expected",
     [
-        ("get_legacy_devices", (), None, []),
         ("get_firmware_update_info", (), {}, {}),
         ("get_firmware_check_status", ("known",), None, None),
         ("get_firmware_check_status", ("known",), "", ""),
@@ -64,8 +56,6 @@ def test_absent_and_empty(reader, args, result, expected):
 @pytest.mark.parametrize(
     "reader,args,result",
     [
-        ("get_legacy_devices", (), {}),
-        ("get_legacy_devices", (), ["private"]),
         ("get_firmware_update_info", (), None),
         ("get_firmware_update_info", (), [1]),
         ("get_firmware_check_status", ("known",), {}),

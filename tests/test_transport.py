@@ -11,12 +11,11 @@ from cudypy import CudyAPIError, CudyAuthError, CudyRouter
 
 def test_token_session_needs_neither_password_nor_discovery():
     with CudyRouter("http://192.0.2.1", auth_token="session-token") as router:
-        with patch.object(router, "_discover_salt_and_devid") as discovery:
+        with patch.object(router, "_discover_salt") as discovery:
             with patch.object(router.session, "post") as post:
                 post.return_value.json.return_value = {"result": {"model": "WR3000"}}
                 assert response_raw(router.get_system_info()) == {"model": "WR3000"}
                 discovery.assert_not_called()
-                assert "devid" not in post.call_args.kwargs["json"]
                 assert post.call_args.kwargs["params"] == {"auth": "session-token"}
                 assert post.call_args.kwargs["allow_redirects"] is False
                 assert router.session.trust_env is False
@@ -170,7 +169,7 @@ def test_discovery_timeout_closes_resources():
                     router._CudyServiceListener, "wait_for_discovery", return_value=False
                 ):
                     with pytest.raises(CudyDiscoveryError):
-                        router._discover_salt_and_devid()
+                        router._discover_salt()
                 browser.return_value.cancel.assert_called_once()
                 zc.return_value.close.assert_called_once()
 
@@ -178,7 +177,7 @@ def test_discovery_timeout_closes_resources():
 def test_explicit_salt_avoids_mdns():
     with CudyRouter("http://192.0.2.1", "password", salt="known-salt") as router:
         with patch("cudypy.core.router.Zeroconf") as zc:
-            assert router._discover_salt_and_devid()
+            assert router._discover_salt()
             zc.assert_not_called()
 
 

@@ -3,6 +3,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
+from math import isfinite
 from typing import Any, Dict, Optional, Tuple
 
 
@@ -33,6 +34,20 @@ def _text(value: Any) -> Optional[str]:
     if value is not None and not isinstance(value, str):
         raise ValueError("Expected text")
     return value
+
+
+def _nonnegative_number(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)):
+        raise ValueError("Expected a nonnegative number")
+    try:
+        result = float(value)
+    except ValueError:
+        raise ValueError("Expected a nonnegative number") from None
+    if not isfinite(result) or result < 0:
+        raise ValueError("Expected a nonnegative number")
+    return result
 
 
 @dataclass
@@ -81,7 +96,7 @@ class SystemStatus:
     swap: Optional[ResourceUsage] = None
     root: Optional[ResourceUsage] = None
     tmp: Optional[ResourceUsage] = None
-    cpu_usage: Optional[int] = None
+    cpu_usage: Optional[float] = None
     load: Optional[Tuple[int, ...]] = None
     processor: Optional[str] = None
     revision: Optional[str] = None
@@ -114,7 +129,7 @@ class SystemStatus:
             _integer(data.get("uptime")),
             deepcopy(data),
             **resources,
-            cpu_usage=_integer(data.get("cpu_usage")),
+            cpu_usage=_nonnegative_number(data.get("cpu_usage")),
             load=load,
             processor=_text(data.get("processor")),
             revision=_text(data.get("revision")),

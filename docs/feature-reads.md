@@ -97,7 +97,8 @@ System fields include `model`, `firmware`, `board_name`, `uptime_seconds`,
 `processor`, `revision`, `rom`, `country`, `device_type` (native `type`),
 `serial_number` (`sn`), `mac_address` (`macaddr`) and `lan_ip`.
 `processor` remains firmware text, not an inferred processor count.
-`cpu_usage`, `timestamp` and `localtime` are native nonnegative integers;
+`cpu_usage` is a native nonnegative number, which may be fractional;
+`timestamp` and `localtime` are native nonnegative integers;
 `load` is a tuple of native nonnegative integers, without inferred scaling,
 averaging intervals or fixed length. No percentage, timestamp timezone, byte
 unit or cross-resource conversion is assumed for these new fields. In
@@ -117,21 +118,16 @@ Expanded parsing is covered by synthetic fixtures representing populated newer
 responses and sparse older variants; this does not establish every firmware's
 field meanings or a new live hardware-validation pass.
 
-### Legacy clients and maintenance status
+### Maintenance status
 
 | Helper | RPC / positional arguments | Result |
 | --- | --- | --- |
-| `get_legacy_devices()` | `devices.get_devlist`, `[]` | List of `FirmwareRecord`; null becomes `[]` |
 | `get_firmware_update_info()` | `system.upgrade_fwinfo`, `[]` | `FirmwareRecord` or `None` for an empty-array response |
 | `get_firmware_check_status(device_id)` | `system.upgrade_checkstatus`, `[device_id]` | Raw state string or `None` |
 | `get_apply_status()` | `apply_status`, `[]` | Raw state string or `None` |
 
 These helpers are source-backed and offline-tested. See [compatibility](compatibility.md)
 for the hardware-tested forms and remaining limits.
-The legacy client reader does not paginate, produce typed `Device` objects or
-act as an automatic fallback when `get_devices()` fails. It retains unknown
-record fields but makes no completeness guarantee beyond the returned array.
-
 Firmware metadata is not a fresh update check and may be stale; this wrapper
 exposes only the no-argument form. The check-status helper requires a known,
 nonempty target ID, sent unchanged. The app uses `000000000000` for its local

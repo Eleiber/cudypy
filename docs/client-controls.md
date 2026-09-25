@@ -1,8 +1,7 @@
 # Client configuration controls
 
-These methods **change router configuration**. They have source-backed wire
-contracts and offline tests, but have not been executed on either test router.
-Firmware support and actual write behavior remain unverified on hardware.
+These methods change router configuration. Their request payloads have offline
+tests; write behavior has not been checked on the test routers.
 Unsupported RPCs raise `CudyUnsupportedError`; other failures raise
 `CudyAPIError` (authentication failures use `CudyAuthError`).
 
@@ -32,8 +31,7 @@ rejection, timeout, or network failure: a lost response does not prove the
 write failed. Inspect the corresponding read before deciding to retry manually.
 An initial authentication may occur if the session has no token.
 
-Example for an explicitly intended change, using an already configured router
-and a deliberately selected client (not run by the read-only examples):
+Example for a selected client:
 
 ```python
 router.set_client_rate_limit(
@@ -41,10 +39,3 @@ router.set_client_rate_limit(
 )
 limits = router.get_client_rate_limit(selected_mac)
 ```
-
-## Protocol basis
-
-The request shapes follow the Cudy app's corresponding configuration workflow.
-They are covered by offline payload tests, not a guarantee of identical behavior
-on every firmware. Browser configuration forms use a separate submission
-mechanism; their CSRF fields do not belong in the app RPC payload.

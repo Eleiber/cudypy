@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add full named-method `AsyncCudyRouter` support with native `aiohttp` I/O,
+  concurrent reads and password/token authentication. Verify passive reads on
+  WR3000 V2.0 and document async use as the primary example.
+- Remove the unused `devid` argument and legacy client-list helper.
+- Rewrite the API reference and streamline developer documentation.
+
 - Return models from ordinary getters, with `.raw` exports and `call_api()` for
   wire data. Serialize model snapshots explicitly in the dashboard.
 - Add client/work-mode/provider/page models and recursively deserialize unmapped
@@ -21,7 +27,7 @@
   empty-array automatic-reboot and firmware-metadata responses as unavailable
   objects (`None`); preserve firmware-specific RPC errors and document limits.
 
-- Add legacy raw clients and one-shot firmware metadata/check/apply status reads.
+- Add one-shot firmware metadata/check/apply status reads.
   Classify timezone assignment as a setter, not a missing read operation.
 
 - Add cellular status, data-plan settings and native statistics reads with

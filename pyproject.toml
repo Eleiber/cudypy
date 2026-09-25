@@ -28,6 +28,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+async = ["aiohttp>=3.9.0", "zeroconf>=0.151.3"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -36,6 +37,8 @@ dev = [
     "mypy>=0.990",
     "isort>=5.10.0",
     "build>=1.0.0",
+    "aiohttp>=3.9.0",
+    "zeroconf>=0.151.3",
 ]
 
 [tool.setuptools]

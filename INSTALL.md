@@ -20,16 +20,13 @@ python -m build
 ```
 
 Install the resulting wheel in a separate environment to verify packaging.
-`cudypy/py.typed` is included for type-aware consumers. The dashboard is optional
-and has its own requirements; it is not imported by the library.
+`cudypy/py.typed` is included for type-aware consumers. The optional dashboard
+has separate dependencies and is not imported by the library.
 
 For live use, supply your router's configured HTTP(S) origin and a
 session token or password as described in [README.md](README.md). Token-based
 connections bypass mDNS. Password connections can use a known salt when
-multicast discovery is unavailable. Do not reboot a router to diagnose a
-login failure.
+multicast discovery is unavailable.
 
-The dashboard has a separate [setup and monitoring guide](dashboard/README.md).
-Its graphs require no frontend build or Internet-hosted assets. Optional graph
-logic tests run with `node --test dashboard/tests/history.test.cjs`.
+The dashboard has a separate [setup guide](dashboard/README.md).
 

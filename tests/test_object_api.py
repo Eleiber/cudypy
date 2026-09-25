@@ -49,7 +49,6 @@ RECORDS = {
 }
 LISTS = {
     "get_client_names": ((), ClientName),
-    "get_legacy_devices": ((), FirmwareRecord),
     "get_work_modes": ((), WorkMode),
     "get_wifi_schedule": ((), Configuration),
     "get_client_internet_schedule": (("020000000001",), Configuration),

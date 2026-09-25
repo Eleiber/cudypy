@@ -12,6 +12,12 @@ def no_network(monkeypatch):
         raise AssertionError("Network access is disabled in unit tests")
 
     monkeypatch.setattr("requests.sessions.Session.request", blocked)
+    try:
+        import aiohttp
+    except ImportError:
+        pass
+    else:
+        monkeypatch.setattr("aiohttp.ClientSession._request", blocked)
 
 
 @pytest.fixture
@@ -84,16 +90,13 @@ def mock_router(monkeypatch):
     def mock_discover(self, service_type="_http._tcp.local."):
         """Mock mDNS discovery."""
         self.salt = "test_salt_value"
-        self.devid = "test_device_id"
         return True
 
     # Patch the discovery method
-    monkeypatch.setattr(CudyRouter, "_discover_salt_and_devid", mock_discover)
+    monkeypatch.setattr(CudyRouter, "_discover_salt", mock_discover)
 
     # Create router instance
     router = CudyRouter("http://192.168.10.1", "test_password")
-    # Ensure devid is set for tests that need it
-    router.devid = "test_device_id"
     yield router
     router.close()
 

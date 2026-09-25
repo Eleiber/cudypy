@@ -85,7 +85,6 @@ class CudyRouter:
 
                 if "salt" in properties:
                     self._router.salt = properties["salt"]
-                    self._router.devid = properties.get("devname") or properties.get("model")
                     self._found_event.set()
 
             except Exception as e:
@@ -107,7 +106,6 @@ class CudyRouter:
         *,
         auth_token: Optional[str] = None,
         salt: Optional[str] = None,
-        devid: Optional[str] = None,
         timeout: float = 10,
     ):
         """Initialize the router connection.
@@ -117,7 +115,6 @@ class CudyRouter:
             password: Optional router admin password
             auth_token: Existing session token; bypasses password login and mDNS
             salt: Known authentication salt; bypasses discovery for password login
-            devid: Legacy parameter; not transmitted in local RPC requests
             timeout: HTTP request timeout in seconds
 
         Raises:
@@ -152,7 +149,6 @@ class CudyRouter:
         self.router_ip = self._extract_ip(base_url)
         self.salt = salt
         self.auth_token = auth_token
-        self.devid = devid
         self.DEFAULT_REQUEST_TIMEOUT = timeout
         self._closed = False
 
@@ -202,8 +198,8 @@ class CudyRouter:
         except Exception as e:
             raise ValueError(f"Invalid base URL: {url}") from e
 
-    def _discover_salt_and_devid(self, service_type: str = "_http._tcp.local.") -> bool:
-        """Discover router salt and device ID via mDNS.
+    def _discover_salt(self, service_type: str = "_http._tcp.local.") -> bool:
+        """Discover router salt via mDNS.
 
         Args:
             service_type: mDNS service type to search for
@@ -215,7 +211,7 @@ class CudyRouter:
             CudyDiscoveryError: If mDNS discovery fails or times out
         """
         if self.salt:
-            logger.debug("Salt and devid already discovered")
+            logger.debug("Salt already discovered")
             return True
 
         zeroconf = None
@@ -235,7 +231,7 @@ class CudyRouter:
             if not self.salt:
                 raise CudyDiscoveryError("mDNS discovery completed but 'salt' was not found")
 
-            logger.info(f"Successfully discovered salt and devid: {self.devid}")
+            logger.info("Successfully discovered salt")
             return True
 
         except CudyDiscoveryError:
@@ -322,7 +318,7 @@ class CudyRouter:
 
         try:
             logger.info("Authenticating with router...")
-            self._discover_salt_and_devid()
+            self._discover_salt()
 
             # Get challenge token
             challenge_response = self._make_auth_request("token")
@@ -518,14 +514,6 @@ class CudyRouter:
         Unknown fields and identifiers are preserved without normalization.
         """
         return self._read_list("devices.get_name")
-
-    def _read_legacy_devices(self) -> List[Dict[str, Any]]:
-        """Read the legacy raw client array; null becomes no entries.
-
-        Unlike get_devices(), this performs no extended-list pagination or
-        typed conversion. It is not an automatic fallback for failed reads.
-        """
-        return self._read_list("devices.get_devlist")
 
     def _read_firmware_update_info(self) -> Optional[Dict[str, Any]]:
         """Read available firmware metadata; do not initiate an update check.
@@ -1264,10 +1252,6 @@ class CudyRouter:
     def get_client_names(self) -> List[ClientName]:
         """Read List[ClientName]; see the model reference for fields and limits."""
         return self._records(ClientName, "_read_client_names")
-
-    def get_legacy_devices(self) -> List[FirmwareRecord]:
-        """Read List[FirmwareRecord]; see the model reference for fields and limits."""
-        return self._records(FirmwareRecord, "_read_legacy_devices")
 
     def get_work_modes(self) -> List[WorkMode]:
         """Read List[WorkMode]; see the model reference for fields and limits."""

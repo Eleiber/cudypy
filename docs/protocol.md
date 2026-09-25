@@ -11,7 +11,10 @@ It is not an official protocol specification or a guarantee of firmware parity.
 - Request body: `{"method": "system.info", "params": []}`.
 - Responses contain a `result` or an `error`; numeric error codes are preserved.
   The client does not rely on response IDs.
-- Local requests omit device IDs. Browser HTML forms are a different interface;
+- Local requests omit device IDs. In the Cudy app, `RequestData.devid` is a
+  transient field used to select a router connection; it is excluded from the
+  serialized RPC body. CudyPy already selects the router with `base_url` and
+  holds one session per client. Browser HTML forms are a different interface;
   their form/CSRF fields are not copied into app RPC calls.
 
 Tokens are credentials. Do not publish request URLs, debug logs or private

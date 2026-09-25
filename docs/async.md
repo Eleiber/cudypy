@@ -1,45 +1,63 @@
-# Async feasibility
+# Async client
 
-`CudyRouter` is synchronous: HTTP requests, authentication and discovery block
-the calling thread. Browser `fetch` does not make the Python library async.
-There is no `AsyncCudyRouter` today.
-
-For an occasional asyncio read, use a worker that owns its entire client:
+`AsyncCudyRouter` uses `aiohttp` for nonblocking local HTTP requests. Install
+the optional dependency with `python -m pip install -e ".[async]"` from this
+repository. The existing `CudyRouter` remains synchronous.
 
 ```python
 import asyncio
 import os
-from cudypy import CudyRouter
-
-def read_snapshot():
-    with CudyRouter(os.environ["CUDY_ROUTER_URL"],
-                    auth_token=os.environ["CUDY_ROUTER_TOKEN"]) as router:
-        return router.get_devices()
+from cudypy import AsyncCudyRouter
 
 async def main():
-    devices = await asyncio.to_thread(read_snapshot)
-    print(len(devices))
+    async with AsyncCudyRouter(
+        os.environ["CUDY_ROUTER_URL"],
+        auth_token=os.environ["CUDY_ROUTER_TOKEN"],
+    ) as router:
+        system, wan, devices = await asyncio.gather(
+            router.get_system_status(),
+            router.get_interface_status("wan"),
+            router.get_devices(),
+        )
+        print(system.model, wan.is_up, len(devices))
 
 asyncio.run(main())
 ```
 
-This avoids blocking the event loop, but is not native async I/O or long-lived
-session reuse. Do not start unbounded workers or concurrently share one
-`CudyRouter`: its session, cookies and authentication state are mutable.
-Cancelling an await does not undo a request already running; the worker owns
-cleanup. Never blindly retry a mutation after cancellation or timeout.
+These are three concurrent requests on one HTTP session. The router may
+serialize work internally; concurrent client requests do not guarantee a faster
+response. Reuse one `AsyncCudyRouter` within one event loop, and call `close()`
+or use `async with` to release connections.
 
-A separate native async client is feasible while preserving the synchronous
-API. Models, validation and response parsing can be shared. It would need an
-async HTTP transport, async context management/close, coordinated authentication
-refresh, bounded concurrency, async discovery or an isolated blocking discovery
-path, and cancellation/no-replay tests. Token sessions are the simplest first
-step; password/mDNS paths must preserve cleanup and retry guarantees.
+## Supported interface
 
-Async keeps an application responsive during I/O, especially across multiple
-routers. It does not speed up one router, fix network routing, or increase the
-router's safe request capacity.
+The async client has coroutine versions of every public `CudyRouter` operation,
+including configuration reads and writes. Each method is awaited. The
+[API reference](api-reference.md) lists their arguments and return values;
+`await router.call_api(method, params)` remains available for other RPCs.
 
-References: [Python to_thread](https://docs.python.org/3/library/asyncio-task.html#asyncio.to_thread)
-and [HTTPX async lifecycle](https://www.python-httpx.org/async/). This is a design
-assessment, not an implemented native async client.
+Constructor arguments match `CudyRouter`. Token sessions bypass password
+login and mDNS. Password sessions use
+the same challenge/digest exchange. If no salt is given, discovery uses
+Zeroconf's asyncio API. Explicit authentication failures return `False` from
+`authenticate()`; reads raise `CudyAuthError` when login fails.
+
+Known reads can retry once after an authentication rejection when a password
+is available. Concurrent calls share a login lock, so they do not each start a
+new login. Transport failures and writes are not replayed. Cancellation ends
+the waiting coroutine and closes its in-flight HTTP response, but it does not
+prove a router write did not happen. Do not automatically repeat a write after
+cancellation or timeout.
+
+The async and synchronous clients use the same [response models](models.md),
+including `Device`, `SystemStatus`, `FirmwareRecord` and `ResponsePage`, and
+the same library exceptions. See the [API reference](api-reference.md) for
+method signatures and the
+[protocol contract](protocol.md) for RPC behavior.
+
+The installed async wheel was checked on a WR3000 V2.0: password login with
+mDNS discovery, concurrent system/WAN/device reads, a broader set of passive
+reads and an existing-token session succeeded. Firmware-specific unsupported
+responses matched the synchronous compatibility results. Writes, session
+expiry and selected argument forms remain untested on hardware; see
+[compatibility](compatibility.md).

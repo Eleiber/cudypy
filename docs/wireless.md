@@ -23,10 +23,10 @@ the firmware result verbatim. It never automatically replays the request.
 Wi-Fi changes may disconnect the controlling client. A timeout does not prove
 failure: read the configuration before deciding to retry manually.
 
-The APK uses a nested object with optional `iface`, `radio`, `mld`, and
+The Cudy app uses a nested object with optional `iface`, `radio`, `mld`, and
 `access_filter` fields. The first three contain section-name-to-field-object
 mappings; `access_filter` is an integer. For example, the following illustrates
-the source-backed disabled-only interface payload (do not run unless intended):
+the disabled-only interface payload:
 
 ```python
 router.set_wifi_config({"iface": {selected_section: {"disabled": 1}}})
@@ -42,14 +42,6 @@ section objects are rejected rather than used as an implicit deletion request.
 Multi-SSID add/delete operations use separate APK methods and are not mapped
 onto this helper.
 
-The RPC envelope and error/no-replay behavior are tested offline only. No
-Wi-Fi configuration, scan, WPS, roaming or association action has been
-executed on the test routers. Read availability does not establish write
-support or hardware compatibility.
-
-## Protocol basis
-
-The request shapes follow the Cudy app's corresponding configuration workflow.
-They are covered by offline payload tests, not a guarantee of identical behavior
-on every firmware. Browser configuration forms use a separate submission
-mechanism; their CSRF fields do not belong in the app RPC payload.
+The write payload has offline test coverage. Wi-Fi configuration writes have
+not been checked on the test routers; read availability does not establish
+write support.

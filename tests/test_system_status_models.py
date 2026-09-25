@@ -84,6 +84,12 @@ def test_sparse_older_firmware_shape():
     assert status.uptime_seconds == 5
 
 
+def test_fractional_cpu_usage_is_preserved():
+    status = SystemStatus.from_api_response({"cpu_usage": 12.75})
+    assert status.cpu_usage == 12.75
+    assert status.raw["cpu_usage"] == 12.75
+
+
 def test_empty_null_and_zero_are_distinct():
     status = SystemStatus.from_api_response(
         {"memory": {}, "swap": None, "load": [], "cpu_usage": "0", "root": {"free": "0"}}

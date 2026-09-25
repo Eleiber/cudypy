@@ -6,6 +6,7 @@ through their local API.
 """
 
 from .core.router import CudyRouter
+from .core.async_router import AsyncCudyRouter
 from .models.records import (
     AccessPoint,
     ClientName,
@@ -53,6 +54,7 @@ __all__ = [
     "WdsStatus",
     "WorkMode",
     "CudyRouter",
+    "AsyncCudyRouter",
     "Device",
     "EthernetPort",
     "LanConfig",
