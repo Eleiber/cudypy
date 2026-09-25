@@ -5,10 +5,6 @@ signatures and return types below apply to both. `CudyRouter` calls are
 synchronous; every `AsyncCudyRouter` operation is a coroutine that requires
 `await`. Both use the same [response models](models.md) and exceptions.
 
-This is a maintained Markdown reference, not output from Sphinx or the Python
-docstrings. Each heading gives the public Python signature; the descriptions
-below specify the behavior that matters when calling it.
-
 ## Construct a client
 
 ### `CudyRouter(base_url, password=None, *, auth_token=None, salt=None, timeout=10)`

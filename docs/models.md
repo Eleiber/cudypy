@@ -3,8 +3,8 @@
 Ordinary `router.get_*()` calls return response models. This reference describes
 their types, fields, snapshot behavior and access to firmware-specific data.
 
-This layer maps JSON responses to Python models. It does not persist data.
-Both the synchronous and async clients return these models.
+Both the synchronous and async clients return these models. A model contains
+the values from one router response. Call the getter again to read newer values.
 
 ```python
 import os
@@ -28,8 +28,7 @@ with CudyRouter(
 
 These are separate reads; optional methods can be unsupported on a firmware.
 See [compatibility](compatibility.md), [read coverage](read-coverage.md) and
-[read contracts](feature-reads.md). This API does not add new firmware endpoints
-or hardware verification.
+[read contracts](feature-reads.md).
 
 ## Models and coverage
 
@@ -79,7 +78,6 @@ existing getter's contract.
 
 ## Known fields versus firmware extensions
 
-This is full **getter coverage**, not full **field-schema coverage**.
 Typed domain models provide declared properties with type
 annotations. `ClientName` exposes `name` and `mac_address`; `WorkMode` exposes
 `mode` and `name`; `AccessPoint` exposes `ssid`; `WdsStatus` exposes `is_up`;
